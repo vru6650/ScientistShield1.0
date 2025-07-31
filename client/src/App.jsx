@@ -22,6 +22,13 @@ const PostPage = lazy(() => import('./pages/PostPage'));
 const Search = lazy(() => import('./pages/Search'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
+// NEW: Lazy load tutorial-related pages
+const Tutorials = lazy(() => import('./pages/Tutorials')); // Page to list all tutorials
+const SingleTutorialPage = lazy(() => import('./pages/SingleTutorialPage')); // Page to display a single tutorial and its chapters
+const CreateTutorial = lazy(() => import('./pages/CreateTutorial')); // Admin page to create tutorials
+const UpdateTutorial = lazy(() => import('./pages/UpdateTutorial')); // Admin page to update tutorials
+
+
 // A fallback component to show while pages are loading
 const LoadingFallback = () => (
     <div className="flex justify-center items-center min-h-screen">
@@ -43,6 +50,11 @@ export default function App() {
                         <Route path="projects" element={<Projects />} />
                         <Route path="post/:postSlug" element={<PostPage />} />
 
+                        {/* NEW: Public Tutorial Routes */}
+                        <Route path="tutorials" element={<Tutorials />} /> {/* List all tutorials */}
+                        <Route path="tutorials/:tutorialSlug" element={<SingleTutorialPage />} /> {/* View a tutorial by slug (defaults to first chapter) */}
+                        <Route path="tutorials/:tutorialSlug/:chapterSlug" element={<SingleTutorialPage />} /> {/* View a specific chapter within a tutorial */}
+
                         {/* Private Routes also use the main layout */}
                         <Route element={<PrivateRoute />}>
                             <Route path="dashboard" element={<Dashboard />} />
@@ -52,6 +64,9 @@ export default function App() {
                         <Route element={<OnlyAdminPrivateRoute />}>
                             <Route path="create-post" element={<CreatePost />} />
                             <Route path="update-post/:postId" element={<UpdatePost />} />
+                            {/* NEW: Admin Tutorial Routes */}
+                            <Route path="create-tutorial" element={<CreateTutorial />} />
+                            <Route path="update-tutorial/:tutorialId" element={<UpdateTutorial />} />
                         </Route>
 
                         {/* 4. The Not Found route also gets the layout */}

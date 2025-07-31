@@ -181,11 +181,19 @@ export default function DashProfile() {
           </Button>
 
           {currentUser.isAdmin && (
-              <Link to={'/create-post'}>
-                <Button type='button' gradientDuoTone='purpleToPink' className='w-full'>
-                  Create a post
-                </Button>
-              </Link>
+              <>
+                <Link to={'/create-post'}>
+                  <Button type='button' gradientDuoTone='purpleToPink' className='w-full'>
+                    Create a post
+                  </Button>
+                </Link>
+                {/* NEW: Link to Create Tutorial page */}
+                <Link to={'/create-tutorial'}>
+                  <Button type='button' gradientDuoTone='tealToLime' className='w-full'>
+                    Create a tutorial
+                  </Button>
+                </Link>
+              </>
           )}
         </form>
         <div className='text-red-500 flex justify-between mt-5'>

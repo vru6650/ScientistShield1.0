@@ -18,6 +18,8 @@ const sidebarLinks = [
   { tab: 'posts', label: 'Posts', icon: HiDocumentText, adminOnly: true },
   { tab: 'users', label: 'Users', icon: HiOutlineUserGroup, adminOnly: true },
   { tab: 'comments', label: 'Comments', icon: HiAnnotation, adminOnly: true },
+  // NEW: Add Tutorials link for admin
+  { tab: 'tutorials', label: 'Tutorials', icon: HiDocumentText, adminOnly: true }, // Using same icon for now, consider new icon
 ];
 
 export default function DashSidebar() {
