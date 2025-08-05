@@ -1,7 +1,6 @@
 import Tutorial from '../models/tutorial.model.js';
 import { errorHandler } from '../utils/error.js';
 
-// Helper to generate a slug (can be reused from your post controller)
 const generateSlug = (text) => {
     return text
         .split(' ')
@@ -11,7 +10,6 @@ const generateSlug = (text) => {
 };
 
 export const createTutorial = async (req, res, next) => {
-    // Only admins can create tutorials
     if (!req.user.isAdmin) {
         return next(errorHandler(403, 'You are not allowed to create a tutorial'));
     }
@@ -23,20 +21,28 @@ export const createTutorial = async (req, res, next) => {
 
     const slug = generateSlug(title);
 
+    const chaptersToSave = chapters.map(chapter => {
+        if (chapter.contentType !== 'quiz' || chapter.quizId === '') {
+            return { ...chapter, quizId: undefined };
+        }
+        return chapter;
+    });
+
     const newTutorial = new Tutorial({
         title,
         description,
         slug,
         thumbnail,
         category,
-        authorId: req.user.id, // Assign the current user as the author
-        chapters, // Initialize with empty array or provided chapters
+        authorId: req.user.id,
+        chapters: chaptersToSave,
     });
 
     try {
         const savedTutorial = await newTutorial.save();
         res.status(201).json(savedTutorial);
     } catch (error) {
+        console.error('Error saving new tutorial:', error);
         next(error);
     }
 };
@@ -47,24 +53,26 @@ export const getTutorials = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 9;
         const sortDirection = req.query.order === 'asc' ? 1 : -1;
 
-        const tutorials = await Tutorial.find({
+        const query = {
             ...(req.query.authorId && { authorId: req.query.authorId }),
             ...(req.query.category && { category: req.query.category }),
             ...(req.query.tutorialId && { _id: req.query.tutorialId }),
-            ...(req.query.slug && { slug: req.query.slug }), // For fetching a single tutorial by its main slug
+            ...(req.query.slug && { slug: req.query.slug }),
             ...(req.query.searchTerm && {
                 $or: [
                     { title: { $regex: req.query.searchTerm, $options: 'i' } },
                     { description: { $regex: req.query.searchTerm, $options: 'i' } },
-                    { 'chapters.content': { $regex: req.query.searchTerm, $options: 'i' } }, // Search within chapter content
+                    { 'chapters.content': { $regex: req.query.searchTerm, $options: 'i' } },
                 ],
             }),
-        })
+        };
+
+        const tutorials = await Tutorial.find(query)
             .sort({ updatedAt: sortDirection })
             .skip(startIndex)
             .limit(limit);
 
-        const totalTutorials = await Tutorial.countDocuments();
+        const totalTutorials = await Tutorial.countDocuments(query);
 
         const now = new Date();
         const oneMonthAgo = new Date(
@@ -73,6 +81,7 @@ export const getTutorials = async (req, res, next) => {
             now.getDate()
         );
         const lastMonthTutorials = await Tutorial.countDocuments({
+            ...query,
             createdAt: { $gte: oneMonthAgo },
         });
 
@@ -81,18 +90,6 @@ export const getTutorials = async (req, res, next) => {
             totalTutorials,
             lastMonthTutorials,
         });
-    } catch (error) {
-        next(error);
-    }
-};
-
-export const getSingleTutorial = async (req, res, next) => {
-    try {
-        const tutorial = await Tutorial.findOne({ slug: req.params.tutorialSlug });
-        if (!tutorial) {
-            return next(errorHandler(404, 'Tutorial not found'));
-        }
-        res.status(200).json(tutorial);
     } catch (error) {
         next(error);
     }
@@ -108,7 +105,6 @@ export const updateTutorial = async (req, res, next) => {
         description,
         category,
         thumbnail,
-        // chapters are updated via separate routes
     };
     if (title) {
         updateFields.slug = generateSlug(title);
@@ -141,14 +137,23 @@ export const deleteTutorial = async (req, res, next) => {
     }
 };
 
-// Chapter Management
 export const addChapter = async (req, res, next) => {
     if (!req.user.isAdmin || req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to add chapters to this tutorial'));
     }
-    const { chapterTitle, content, order } = req.body;
-    if (!chapterTitle || !content || order === undefined) {
-        return next(errorHandler(400, 'Chapter title, content, and order are required.'));
+    const { chapterTitle, content, order, contentType, initialCode, expectedOutput, quizId } = req.body;
+
+    if (!chapterTitle || order === undefined) {
+        return next(errorHandler(400, 'Chapter title and order are required.'));
+    }
+    if (contentType === 'text' && !content) {
+        return next(errorHandler(400, 'Chapter content is required for text chapters.'));
+    }
+    if (contentType === 'code-interactive' && !initialCode) {
+        return next(errorHandler(400, 'Initial code is required for interactive code chapters.'));
+    }
+    if (contentType === 'quiz' && !quizId) {
+        return next(errorHandler(400, 'A quiz ID is required for quiz chapters.'));
     }
 
     try {
@@ -158,16 +163,23 @@ export const addChapter = async (req, res, next) => {
         }
 
         const chapterSlug = generateSlug(chapterTitle);
-        // Check for duplicate chapter slugs within the tutorial
         if (tutorial.chapters.some(c => c.chapterSlug === chapterSlug)) {
             return next(errorHandler(400, 'Chapter with this title already exists in this tutorial.'));
         }
 
-        tutorial.chapters.push({ chapterTitle, chapterSlug, content, order });
-        tutorial.chapters.sort((a, b) => a.order - b.order); // Keep chapters sorted
+        let chapterData = { chapterTitle, chapterSlug, order, contentType, initialCode, expectedOutput, content };
+        if (contentType === 'quiz' && quizId) {
+            chapterData.quizId = quizId;
+        } else {
+            chapterData.quizId = undefined;
+        }
+
+        tutorial.chapters.push(chapterData);
+        tutorial.chapters.sort((a, b) => a.order - b.order);
         await tutorial.save();
-        res.status(201).json(tutorial.chapters[tutorial.chapters.length - 1]); // Return the newly added chapter
+        res.status(201).json(tutorial.chapters[tutorial.chapters.length - 1]);
     } catch (error) {
+        console.error('Error adding new chapter:', error);
         next(error);
     }
 };
@@ -193,20 +205,17 @@ export const updateChapter = async (req, res, next) => {
             return next(errorHandler(404, 'Chapter not found.'));
         }
 
-        // Update fields for the specific chapter
         Object.assign(chapter, updateFields);
 
-        // Regenerate slug if title changed
         if (chapterTitle !== undefined) {
             const newChapterSlug = generateSlug(chapterTitle);
-            // Check for duplicate slug after update, excluding the current chapter
             if (tutorial.chapters.some(c => c.chapterSlug === newChapterSlug && c._id.toString() !== chapter._id.toString())) {
                 return next(errorHandler(400, 'Another chapter with this title already exists.'));
             }
             chapter.chapterSlug = newChapterSlug;
         }
 
-        tutorial.chapters.sort((a, b) => a.order - b.order); // Re-sort chapters
+        tutorial.chapters.sort((a, b) => a.order - b.order);
         await tutorial.save();
         res.status(200).json(chapter);
     } catch (error) {
@@ -224,9 +233,39 @@ export const deleteChapter = async (req, res, next) => {
             return next(errorHandler(404, 'Tutorial not found.'));
         }
 
-        tutorial.chapters.pull({ _id: req.params.chapterId }); // Remove the chapter
+        tutorial.chapters.pull({ _id: req.params.chapterId });
         await tutorial.save();
         res.status(200).json('Chapter deleted successfully');
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+// NEW: Function to mark a chapter as complete
+export const markChapterAsComplete = async (req, res, next) => {
+    const { tutorialId, chapterId } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const tutorial = await Tutorial.findById(tutorialId);
+        if (!tutorial) {
+            return next(errorHandler(404, 'Tutorial not found.'));
+        }
+
+        const chapter = tutorial.chapters.id(chapterId);
+        if (!chapter) {
+            return next(errorHandler(404, 'Chapter not found.'));
+        }
+
+        if (chapter.completedBy.includes(userId)) {
+            return next(errorHandler(400, 'Chapter already marked as complete by this user.'));
+        }
+
+        chapter.completedBy.push(userId);
+        await tutorial.save();
+
+        res.status(200).json({ message: 'Chapter marked as complete.', completedBy: chapter.completedBy });
     } catch (error) {
         next(error);
     }

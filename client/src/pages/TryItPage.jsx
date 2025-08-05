@@ -273,11 +273,6 @@ export default function SingleTutorialPage() {
                     />
                 );
             }
-            // NEW: Render the CodeEditor component
-            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
-                const snippetId = domNode.attribs['data-snippet-id'];
-                return <CodeEditor snippetId={snippetId} />;
-            }
         }
     };
 

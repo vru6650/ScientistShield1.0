@@ -1,4 +1,5 @@
-import { Alert, Button, FileInput, Select, TextInput, Spinner, Modal } from 'flowbite-react';
+// client/src/pages/CreateTutorial.jsx
+import { Alert, Button, FileInput, Select, TextInput, Spinner, Modal, Textarea } from 'flowbite-react';
 import TiptapEditor from '../components/TiptapEditor';
 import { useState, useReducer, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,13 +9,16 @@ import { createTutorial as createTutorialService } from '../services/tutorialSer
 import { CircularProgressbar } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { useQuery } from '@tanstack/react-query';
-import { FaTrash, FaPlus } from 'react-icons/fa'; // Removed FaArrowUp, FaArrowDown as drag-and-drop handles order visually
+import { FaTrash, FaPlus, FaCode, FaQuestionCircle } from 'react-icons/fa';
 
-// Using react-dnd for drag-and-drop. You'll need to install it.
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
+// Using react-dnd for drag-and-drop.
+import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { getQuizzes as getQuizzesService } from '../services/quizService';
+import DraggableChapter from '../components/DraggableChapter'; // Assuming you've moved this to its own file
 
-const DRAFT_KEY_TUTORIAL = 'tutorialDraft'; // Separate draft key for tutorials
+
+const DRAFT_KEY_TUTORIAL = 'tutorialDraft';
 
 const tutorialInitialState = {
     formData: {
@@ -28,21 +32,19 @@ const tutorialInitialState = {
     loading: false,
 };
 
-// Helper to reorder array elements (used in reducer)
 const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
     const [removed] = result.splice(startIndex, 1);
     result.splice(endIndex, 0, removed);
-
-    // Reassign order property based on new array order
     return result.map((item, index) => ({ ...item, order: index + 1 }));
 };
 
 function tutorialReducer(state, action) {
     switch (action.type) {
+        // ... all your reducer cases here
         case 'FIELD_CHANGE':
             return { ...state, formData: { ...state.formData, ...action.payload } };
-        case 'ADD_CHAPTER_FIELD': // Add an empty chapter to the form
+        case 'ADD_CHAPTER_FIELD':
             return {
                 ...state,
                 formData: {
@@ -51,11 +53,15 @@ function tutorialReducer(state, action) {
                         chapterTitle: '',
                         chapterSlug: '',
                         content: '',
-                        order: state.formData.chapters.length + 1
+                        order: state.formData.chapters.length + 1,
+                        contentType: 'text',
+                        initialCode: '',
+                        expectedOutput: '',
+                        quizId: '',
                     }]
                 }
             };
-        case 'UPDATE_CHAPTER_FIELD': // Update a specific chapter's field
+        case 'UPDATE_CHAPTER_FIELD':
             return {
                 ...state,
                 formData: {
@@ -67,18 +73,17 @@ function tutorialReducer(state, action) {
                     ),
                 },
             };
-        case 'REMOVE_CHAPTER': // Remove a chapter
+        case 'REMOVE_CHAPTER':
             return {
                 ...state,
                 formData: {
                     ...state.formData,
-                    // Reassign order after removal
                     chapters: state.formData.chapters
                         .filter((_, index) => index !== action.payload.index)
                         .map((chapter, i) => ({ ...chapter, order: i + 1 })),
                 },
             };
-        case 'REORDER_CHAPTERS': // Action to reorder chapters
+        case 'REORDER_CHAPTERS':
             return {
                 ...state,
                 formData: {
@@ -91,7 +96,7 @@ function tutorialReducer(state, action) {
         case 'PUBLISH_START':
             return { ...state, loading: true, publishError: null };
         case 'PUBLISH_SUCCESS':
-            return { ...tutorialInitialState }; // Reset form after success
+            return { ...tutorialInitialState };
         case 'PUBLISH_ERROR':
             return { ...state, loading: false, publishError: action.payload };
         case 'LOAD_DRAFT':
@@ -106,159 +111,40 @@ const generateSlug = (text) => {
     return text.toLowerCase().trim().replace(/[\s\W-]+/g, '-').replace(/^-+|-+$/g, '');
 };
 
-// Item type for react-dnd
-const ItemTypes = {
-    CHAPTER: 'chapter',
-};
-
-// Chapter component for drag-and-drop
-const DraggableChapter = ({ chapter, index, totalChapters, dispatch, handleChapterFieldChange, handleChapterContentChange, moveChapter }) => {
-    const ref = useRef(null);
-
-    // useDrag hook for making the chapter draggable
-    const [{ isDragging }, drag] = useDrag({
-        type: ItemTypes.CHAPTER,
-        item: { index },
-        collect: (monitor) => ({
-            isDragging: monitor.isDragging(),
-        }),
-    });
-
-    // useDrop hook for making the chapter a drop target
-    const [, drop] = useDrop({
-        accept: ItemTypes.CHAPTER,
-        hover(item, monitor) {
-            if (!ref.current) {
-                return;
-            }
-            const dragIndex = item.index;
-            const hoverIndex = index;
-
-            // Don't replace items with themselves
-            if (dragIndex === hoverIndex) {
-                return;
-            }
-
-            // Determine rectangle on screen
-            const hoverBoundingRect = ref.current?.getBoundingClientRect();
-
-            // Get vertical middle
-            const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
-
-            // Determine mouse position
-            const clientOffset = monitor.getClientOffset();
-
-            // Get pixels to the top
-            const hoverClientY = clientOffset.y - hoverBoundingRect.top;
-
-            // Only perform the move when the mouse has crossed half of the items height
-            // When dragging downwards, only move when the cursor is below 50%
-            // When dragging upwards, only move when the cursor is above 50%
-
-            // Dragging downwards
-            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-                return;
-            }
-
-            // Dragging upwards
-            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-                return;
-            }
-
-            // Time to actually perform the action
-            moveChapter(dragIndex, hoverIndex);
-
-            // Note: we're mutating the monitor item here!
-            // Generally it's better to avoid mutations in render functions and side effects
-            // but for performance reasons and simplicity for this case, it's acceptable.
-            item.index = hoverIndex;
-        },
-    });
-
-    drag(drop(ref)); // Attach both drag and drop capabilities to the same ref
-
-    const opacity = isDragging ? 0.5 : 1;
-
-    return (
-        <div
-            ref={ref}
-            style={{ opacity }}
-            className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 relative mb-4 transition-all duration-200 ease-in-out shadow-md"
-        >
-            <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Chapter {chapter.order}</h3>
-                <div className="flex gap-2">
-                    <Button
-                        type="button"
-                        color="red"
-                        size="sm"
-                        onClick={() => dispatch({ type: 'REMOVE_CHAPTER', payload: { index } })}
-                        className="p-1"
-                        title="Remove Chapter"
-                    >
-                        <FaTrash />
-                    </Button>
-                </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <TextInput
-                    type='text'
-                    placeholder='Chapter Title'
-                    required
-                    value={chapter.chapterTitle}
-                    onChange={(e) => handleChapterFieldChange(index, 'chapterTitle', e.target.value)}
-                    className="w-full"
-                />
-                <TextInput
-                    type='text'
-                    placeholder='chapter-slug'
-                    value={chapter.chapterSlug}
-                    readOnly
-                    disabled
-                    className="w-full"
-                />
-            </div>
-            <TiptapEditor
-                content={chapter.content}
-                onChange={(newContent) => handleChapterContentChange(index, newContent)}
-                placeholder={`Write content for Chapter ${chapter.order}...`}
-            />
-        </div>
-    );
-};
-
 export default function CreateTutorial() {
     const [state, dispatch] = useReducer(tutorialReducer, tutorialInitialState);
     const [showDraftModal, setShowDraftModal] = useState(false);
     const { upload, progress: uploadProgress, error: uploadError, isUploading } = useCloudinaryUpload();
     const navigate = useNavigate();
 
-    // Fetch dynamic categories
     const { data: categoriesData, isLoading: categoriesLoading, isError: categoriesError } = useQuery({
         queryKey: ['tutorialCategories'],
         queryFn: async () => {
-            // Replace with actual API call to get categories from your backend
-            // Example: const response = await fetch('/api/categories'); return response.json();
             return new Promise(resolve => {
                 setTimeout(() => {
-                    resolve([
-                        'JavaScript', 'React.js', 'Next.js', 'CSS', 'HTML', 'Node.js', 'Python', 'Web Development', 'Databases', 'DevOps'
-                    ]);
+                    resolve(['JavaScript', 'React.js', 'Next.js', 'CSS', 'HTML', 'Node.js', 'Python', 'Web Development', 'Databases', 'DevOps', 'Algorithms']);
                 }, 500);
             });
         },
-        staleTime: Infinity, // Categories don't change often
+        staleTime: Infinity,
     });
-
     const availableCategories = categoriesData || [];
 
-    // Draft handling
+    const { data: quizzesData, isLoading: quizzesLoading, isError: quizzesError } = useQuery({
+        queryKey: ['availableQuizzes'],
+        queryFn: async () => {
+            const res = await getQuizzesService();
+            return res.quizzes;
+        },
+        staleTime: 1000 * 60 * 10,
+    });
+    const availableQuizzes = quizzesData || [];
+
     useEffect(() => {
         const savedDraft = localStorage.getItem(DRAFT_KEY_TUTORIAL);
         if (savedDraft) {
             const draftData = JSON.parse(savedDraft);
-            // Check if draft has meaningful content (title or any chapter content)
-            if (draftData.title || (draftData.chapters && draftData.chapters.some(c => c.content?.replace(/<(.|\n)*?>/g, '').trim().length > 0))) {
+            if (draftData.title || (draftData.chapters && draftData.chapters.some(c => c.content?.replace(/<(.|\n)*?>/g, '').trim().length > 0 || c.initialCode?.trim().length > 0 || c.quizId))) {
                 setShowDraftModal(true);
             }
         }
@@ -266,11 +152,9 @@ export default function CreateTutorial() {
 
     useEffect(() => {
         const handler = setTimeout(() => {
-            // Only save draft if there's substantial content
-            if (state.formData.title || (state.formData.chapters && state.formData.chapters.some(c => c.content?.replace(/<(.|\n)*?>/g, '').trim().length > 0))) {
+            if (state.formData.title || (state.formData.chapters && state.formData.chapters.some(c => c.content?.replace(/<(.|\n)*?>/g, '').trim().length > 0 || c.initialCode?.trim().length > 0 || c.quizId))) {
                 localStorage.setItem(DRAFT_KEY_TUTORIAL, JSON.stringify(state.formData));
             } else {
-                // If content becomes empty, remove the draft
                 localStorage.removeItem(DRAFT_KEY_TUTORIAL);
             }
         }, 2000);
@@ -301,7 +185,7 @@ export default function CreateTutorial() {
                 maxSizeMB: 5,
             });
             dispatch({ type: 'THUMBNAIL_UPLOAD_SUCCESS', payload: url });
-            dispatch({ type: 'PUBLISH_ERROR', payload: null }); // Clear any previous error
+            dispatch({ type: 'PUBLISH_ERROR', payload: null });
         } catch (err) {
             dispatch({ type: 'PUBLISH_ERROR', payload: err.message || 'Failed to upload thumbnail.' });
             console.error('Thumbnail upload error:', err);
@@ -318,11 +202,9 @@ export default function CreateTutorial() {
     };
 
     const handleChapterContentChange = (index, newContent) => {
-        // Ensure that chapter content is always normalized to an empty string if Tiptap returns null/undefined
         const contentToSave = newContent === undefined || newContent === null ? '' : newContent;
         dispatch({ type: 'UPDATE_CHAPTER_FIELD', payload: { index, field: 'content', value: contentToSave } });
     };
-
 
     const handleChapterFieldChange = (index, field, value) => {
         if (field === 'chapterTitle') {
@@ -330,8 +212,6 @@ export default function CreateTutorial() {
             dispatch({ type: 'UPDATE_CHAPTER_FIELD', payload: { index, field: 'chapterTitle', value } });
             dispatch({ type: 'UPDATE_CHAPTER_FIELD', payload: { index, field: 'chapterSlug', value: newSlug } });
         } else if (field === 'order') {
-            // Prevent directly setting order via input if using drag and drop for reordering
-            // We'll let drag and drop manage the order field
             console.warn("Manual order change is disabled. Use drag-and-drop to reorder chapters.");
         } else {
             dispatch({ type: 'UPDATE_CHAPTER_FIELD', payload: { index, field, value } });
@@ -346,7 +226,6 @@ export default function CreateTutorial() {
         e.preventDefault();
         dispatch({ type: 'PUBLISH_START' });
 
-        // Enhanced Validation
         if (!state.formData.title.trim()) {
             return dispatch({ type: 'PUBLISH_ERROR', payload: 'Tutorial Title is required.' });
         }
@@ -363,14 +242,24 @@ export default function CreateTutorial() {
             return dispatch({ type: 'PUBLISH_ERROR', payload: 'A tutorial must have at least one chapter.' });
         }
 
-        // Validate each chapter
         for (const chapter of state.formData.chapters) {
             if (!chapter.chapterTitle.trim()) {
                 return dispatch({ type: 'PUBLISH_ERROR', payload: `Chapter ${chapter.order}: Title is required.` });
             }
-            // Remove HTML tags and check if content is empty or only whitespace
-            if (!chapter.content || chapter.content.replace(/<(.|\n)*?>/g, '').trim().length === 0) {
-                return dispatch({ type: 'PUBLISH_ERROR', payload: `Chapter ${chapter.order}: Content cannot be empty.` });
+            if (chapter.contentType === 'text' || chapter.contentType === 'code-interactive') {
+                if (chapter.contentType === 'text' && (!chapter.content || chapter.content.replace(/<(.|\n)*?>/g, '').trim().length === 0)) {
+                    return dispatch({ type: 'PUBLISH_ERROR', payload: `Chapter ${chapter.order}: Text content cannot be empty for 'Text Content' type.` });
+                }
+            }
+            if (chapter.contentType === 'code-interactive') {
+                if (!chapter.initialCode?.trim()) {
+                    return dispatch({ type: 'PUBLISH_ERROR', payload: `Chapter ${chapter.order}: Initial Code is required for 'Interactive Code Example' type.` });
+                }
+            }
+            if (chapter.contentType === 'quiz') {
+                if (!chapter.quizId) {
+                    return dispatch({ type: 'PUBLISH_ERROR', payload: `Chapter ${chapter.order}: A Quiz must be selected for 'Linked Quiz' type.` });
+                }
             }
         }
 
@@ -386,11 +275,10 @@ export default function CreateTutorial() {
     };
 
     return (
-        <DndProvider backend={HTML5Backend}> {/* Wrap the component with DndProvider */}
+        <DndProvider backend={HTML5Backend}>
             <div className='p-3 max-w-4xl mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200'>
                 <h1 className='text-center text-4xl my-8 font-extrabold text-gray-900 dark:text-white'>Create a New Tutorial</h1>
                 <form className='flex flex-col gap-6 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg' onSubmit={handleSubmit}>
-                    {/* Main Tutorial Details */}
                     <div className='flex flex-col gap-5'>
                         <div>
                             <label htmlFor="title" className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">Tutorial Title</label>
@@ -422,7 +310,7 @@ export default function CreateTutorial() {
                                 type='text'
                                 placeholder='tutorial-slug'
                                 id='slug'
-                                value={state.formData.slug}
+                                value={generateSlug(state.formData.title)}
                                 readOnly
                                 disabled
                                 className='w-full bg-gray-100 dark:bg-gray-700'
@@ -445,7 +333,6 @@ export default function CreateTutorial() {
                         </div>
                     </div>
 
-                    {/* Thumbnail Upload */}
                     <div className='flex flex-col gap-3 border-4 border-teal-500 border-dotted p-5 rounded-md relative'>
                         <p className="text-sm font-medium text-gray-900 dark:text-gray-300 mb-2">Tutorial Thumbnail</p>
                         <div className='flex gap-4 items-center justify-between flex-wrap'>
@@ -473,7 +360,6 @@ export default function CreateTutorial() {
                         {uploadError && <Alert color='failure' className='mt-4'>{uploadError}</Alert>}
                     </div>
 
-                    {/* Chapters Management */}
                     <h2 className="text-2xl font-bold mt-8 mb-4 text-gray-900 dark:text-white">Tutorial Chapters</h2>
                     {state.formData.chapters.length === 0 && (
                         <Alert color="info" className="animate-fade-in">
@@ -481,10 +367,10 @@ export default function CreateTutorial() {
                         </Alert>
                     )}
                     {state.formData.chapters
-                        .sort((a,b) => a.order - b.order) // Ensure chapters are displayed in order
+                        .sort((a,b) => a.order - b.order)
                         .map((chapter, index) => (
                             <DraggableChapter
-                                key={chapter._id || `chapter-${index}`} // Use _id if available, fallback to index
+                                key={chapter._id || `chapter-${index}`}
                                 chapter={chapter}
                                 index={index}
                                 totalChapters={state.formData.chapters.length}
@@ -492,6 +378,9 @@ export default function CreateTutorial() {
                                 handleChapterFieldChange={handleChapterFieldChange}
                                 handleChapterContentChange={handleChapterContentChange}
                                 moveChapter={moveChapter}
+                                quizzesData={availableQuizzes}
+                                quizzesLoading={quizzesLoading}
+                                quizzesError={quizzesError}
                             />
                         ))}
                     <Button
@@ -499,7 +388,7 @@ export default function CreateTutorial() {
                         gradientDuoTone='cyanToBlue'
                         outline
                         onClick={() => dispatch({ type: 'ADD_CHAPTER_FIELD' })}
-                        className="w-fit self-end" // Align to right
+                        className="w-fit self-end"
                     >
                         <FaPlus className="mr-2" /> Add New Chapter
                     </Button>
@@ -510,7 +399,6 @@ export default function CreateTutorial() {
                     {state.publishError && <Alert className='mt-5 animate-fade-in' color='failure'>{state.publishError}</Alert>}
                 </form>
 
-                {/* Draft Modal */}
                 <Modal show={showDraftModal} size="md" onClose={handleDismissDraft} popup>
                     <Modal.Header />
                     <Modal.Body>

@@ -208,3 +208,20 @@ html {
     transform: translateY(0);
   }
 }
+
+/* Add this to your main CSS file */
+.active-toc-item {
+  color: #3b82f6; /* A prominent blue color, like Tailwind's blue-500 */
+  font-weight: 700; /* Make the text bold */
+  border-left: 3px solid #3b82f6; /* Add a colored line on the left side */
+  padding-left: 0.75rem; /* Add some padding to align with the line */
+  transition: all 0.3s ease-in-out; /* Add a smooth transition */
+}
+
+/* Ensure the default styling is consistent */
+.toc-link {
+  color: #6b7280; /* A subtle gray for inactive links */
+  padding-left: 1rem; /* Adjust padding to match the active state */
+  border-left: 3px solid transparent; /* Transparent border to prevent jumpiness */
+  transition: all 0.3s ease-in-out;
+}

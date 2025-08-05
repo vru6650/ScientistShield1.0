@@ -1,4 +1,5 @@
-import { Alert, Button, TextInput } from 'flowbite-react';
+// client/src/components/DashProfile.jsx
+import { Alert, Button, FileInput, Select, TextInput, Spinner, Modal } from 'flowbite-react';
 import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { CircularProgressbar } from 'react-circular-progressbar';
@@ -187,10 +188,16 @@ export default function DashProfile() {
                     Create a post
                   </Button>
                 </Link>
-                {/* NEW: Link to Create Tutorial page */}
+                {/* Link to Create Tutorial page */}
                 <Link to={'/create-tutorial'}>
                   <Button type='button' gradientDuoTone='tealToLime' className='w-full'>
                     Create a tutorial
+                  </Button>
+                </Link>
+                {/* NEW: Link to Create Quiz page */}
+                <Link to={'/create-quiz'}>
+                  <Button type='button' gradientDuoTone='cyanToBlue' className='w-full'>
+                    Create a quiz
                   </Button>
                 </Link>
               </>

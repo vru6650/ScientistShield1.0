@@ -9,17 +9,39 @@ const tutorialChapterSchema = new mongoose.Schema(
         chapterSlug: {
             type: String,
             required: true,
-            unique: true, // Chapters should have unique slugs within a tutorial
+            unique: true,
         },
-        content: { // Rich text content for the chapter, similar to post content
+        // NEW: Field to define the content type of the chapter
+        contentType: {
+            type: String,
+            enum: ['text', 'code-interactive', 'quiz'],
+            default: 'text',
+        },
+        // Content for 'text' and 'quiz' chapters
+        content: {
             type: String,
             required: true,
         },
-        order: { // To define the order of chapters in a tutorial
+        // NEW: Initial code for 'code-interactive' chapters
+        initialCode: {
+            type: String,
+            default: '',
+        },
+        // NEW: ID to link to a separate quiz document for 'quiz' chapters
+        quizId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Quiz',
+        },
+        order: {
             type: Number,
             required: true,
         },
-        // You can add other fields specific to a chapter, e.g., code examples, images
+        // NEW: Array to track which users have completed this chapter
+        completedBy: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: [],
+        }],
     },
     { timestamps: true }
 );
@@ -31,29 +53,42 @@ const tutorialSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        slug: { // Main tutorial slug
+        slug: {
             type: String,
             required: true,
             unique: true,
         },
-        description: { // Short description of the tutorial
+        description: {
             type: String,
             required: true,
         },
-        thumbnail: { // Image for tutorial overview/card
+        thumbnail: {
             type: String,
             default: 'https://www.hostinger.com/tutorials/wp-content/uploads/sites/2/2021/09/how-to-write-a-blog-post.png',
         },
-        category: { // e.g., 'JavaScript', 'React', 'Node.js'
+        category: {
             type: String,
             default: 'uncategorized',
         },
-        authorId: { // Link to the User model
-            type: String, // Or mongoose.Schema.Types.ObjectId, ref: 'User'
+        authorId: {
+            type: String,
             required: true,
         },
-        // Embedded chapters directly in the tutorial model for simpler fetching
         chapters: [tutorialChapterSchema],
+        difficulty: {
+            type: String,
+            enum: ['Beginner', 'Intermediate', 'Advanced'],
+            default: 'Beginner',
+        },
+        readingTime: {
+            type: Number,
+            default: 0,
+        },
+        completedBy: {
+            type: [mongoose.Schema.Types.ObjectId],
+            ref: 'User',
+            default: [],
+        },
     },
     { timestamps: true }
 );

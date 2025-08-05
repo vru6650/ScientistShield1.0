@@ -1,34 +1,21 @@
-/**
- * A service file for tutorial-related API calls.
- */
+// client/src/services/tutorialService.js
+import axios from 'axios';
+
+// Create an Axios instance with a base URL and credentials
+// This instance will automatically include cookies in every request
+const API = axios.create({
+    baseURL: "http://localhost:3000",
+    withCredentials: true,
+});
 
 /**
- * Fetches tutorials based on query parameters.
- * @param {string} searchQuery - URL encoded query string (e.g., 'limit=5&category=reactjs').
+ * Fetches tutorials based on query parameters. This function can also fetch
+ * a single tutorial by its slug by passing a slug query parameter.
+ * @param {string} searchQuery - URL encoded query string (e.g., 'limit=5&category=reactjs' or 'slug=my-tutorial-slug').
  * @returns {Promise<object>} The data containing the tutorials array and total counts.
- * @throws {Error} Throws an error if the network response is not ok.
  */
-export const getTutorials = async (searchQuery) => {
-    const res = await fetch(`/api/tutorial/gettutorials?${searchQuery}`);
-    if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to fetch tutorials');
-    }
-    return res.json();
-};
-
-/**
- * Fetches a single tutorial by its slug.
- * @param {string} tutorialSlug - The slug of the tutorial.
- * @returns {Promise<import('../types').Tutorial>} The tutorial data.
- * @throws {Error} Throws an error if the tutorial is not found or fetch fails.
- */
-export const getSingleTutorial = async (tutorialSlug) => {
-    const res = await fetch(`/api/tutorial/getsingletutorial/${tutorialSlug}`);
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to fetch tutorial.');
-    }
+export const getTutorials = async (searchQuery = '') => {
+    const { data } = await API.get(`/api/tutorial/gettutorials?${searchQuery}`);
     return data;
 };
 
@@ -36,18 +23,9 @@ export const getSingleTutorial = async (tutorialSlug) => {
  * Creates a new tutorial.
  * @param {object} formData - The tutorial data to create.
  * @returns {Promise<import('../types').Tutorial>} The created tutorial data.
- * @throws {Error} Throws an error if creation fails.
  */
 export const createTutorial = async (formData) => {
-    const res = await fetch('/api/tutorial/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to create tutorial.');
-    }
+    const { data } = await API.post('/api/tutorial/create', formData);
     return data;
 };
 
@@ -55,21 +33,12 @@ export const createTutorial = async (formData) => {
  * Updates an existing tutorial.
  * @param {object} params
  * @param {string} params.tutorialId - ID of the tutorial to update.
- * @param {string} params.userId - ID of the user performing the update (for authorization).
+ * @param {string} params.userId - ID of the user performing the update.
  * @param {object} params.formData - The updated tutorial data.
  * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
- * @throws {Error} Throws an error if update fails.
  */
 export const updateTutorial = async ({ tutorialId, userId, formData }) => {
-    const res = await fetch(`/api/tutorial/update/${tutorialId}/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to update tutorial.');
-    }
+    const { data } = await API.put(`/api/tutorial/update/${tutorialId}/${userId}`, formData);
     return data;
 };
 
@@ -77,82 +46,64 @@ export const updateTutorial = async ({ tutorialId, userId, formData }) => {
  * Deletes a tutorial.
  * @param {object} params
  * @param {string} params.tutorialId - ID of the tutorial to delete.
- * @param {string} params.userId - ID of the user performing the delete (for authorization).
+ * @param {string} params.userId - ID of the user performing the delete.
  * @returns {Promise<string>} Success message.
- * @throws {Error} Throws an error if deletion fails.
  */
 export const deleteTutorial = async ({ tutorialId, userId }) => {
-    const res = await fetch(`/api/tutorial/delete/${tutorialId}/${userId}`, {
-        method: 'DELETE',
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to delete tutorial.');
-    }
+    const { data } = await API.delete(`/api/tutorial/delete/${tutorialId}/${userId}`);
     return data;
 };
 
+// ==========================================================
+// Chapter operations
+// ==========================================================
+
 /**
- * Adds a new chapter to a tutorial.
+ * Adds a new chapter to a specific tutorial.
  * @param {object} params
- * @param {string} params.tutorialId - ID of the tutorial to add chapter to.
+ * @param {string} params.tutorialId - ID of the tutorial to add the chapter to.
  * @param {string} params.userId - ID of the user performing the action.
- * @param {object} params.chapterData - Data for the new chapter (title, content, order).
- * @returns {Promise<import('../types').TutorialChapter>} The newly created chapter data.
- * @throws {Error} Throws an error if chapter addition fails.
+ * @param {object} params.chapterData - The chapter data to add.
+ * @returns {Promise<import('../types').Tutorial>} The updated tutorial data with the new chapter.
  */
-export const addTutorialChapter = async ({ tutorialId, userId, chapterData }) => {
-    const res = await fetch(`/api/tutorial/addchapter/${tutorialId}/${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chapterData),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to add chapter.');
-    }
+export const addChapter = async ({ tutorialId, userId, chapterData }) => {
+    const { data } = await API.post(`/api/tutorial/addchapter/${tutorialId}/${userId}`, chapterData);
     return data;
 };
 
 /**
- * Updates an existing chapter in a tutorial.
+ * Updates an existing chapter in a specific tutorial.
  * @param {object} params
- * @param {string} params.tutorialId - ID of the parent tutorial.
+ * @param {string} params.tutorialId - ID of the tutorial.
  * @param {string} params.chapterId - ID of the chapter to update.
  * @param {string} params.userId - ID of the user performing the action.
- * @param {object} params.chapterData - Updated chapter data.
- * @returns {Promise<import('../types').TutorialChapter>} The updated chapter data.
- * @throws {Error} Throws an error if chapter update fails.
+ * @param {object} params.chapterData - The updated chapter data.
+ * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
  */
-export const updateTutorialChapter = async ({ tutorialId, chapterId, userId, chapterData }) => {
-    const res = await fetch(`/api/tutorial/updatechapter/${tutorialId}/${chapterId}/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chapterData),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to update chapter.');
-    }
+export const updateChapter = async ({ tutorialId, chapterId, userId, chapterData }) => {
+    const { data } = await API.put(`/api/tutorial/updatechapter/${tutorialId}/${chapterId}/${userId}`, chapterData);
     return data;
 };
 
 /**
- * Deletes a chapter from a tutorial.
+ * Deletes a chapter from a specific tutorial.
  * @param {object} params
- * @param {string} params.tutorialId - ID of the parent tutorial.
+ * @param {string} params.tutorialId - ID of the tutorial.
  * @param {string} params.chapterId - ID of the chapter to delete.
  * @param {string} params.userId - ID of the user performing the action.
- * @returns {Promise<string>} Success message.
- * @throws {Error} Throws an error if chapter deletion fails.
+ * @returns {Promise<import('../types').Tutorial>} The updated tutorial data.
  */
-export const deleteTutorialChapter = async ({ tutorialId, chapterId, userId }) => {
-    const res = await fetch(`/api/tutorial/deletechapter/${tutorialId}/${chapterId}/${userId}`, {
-        method: 'DELETE',
-    });
-    const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.message || 'Failed to delete chapter.');
-    }
+export const deleteChapter = async ({ tutorialId, chapterId, userId }) => {
+    const { data } = await API.delete(`/api/tutorial/deletechapter/${tutorialId}/${chapterId}/${userId}`);
     return data;
+};
+
+export default {
+    getTutorials,
+    createTutorial,
+    updateTutorial,
+    deleteTutorial,
+    addChapter,
+    updateChapter,
+    deleteChapter
 };

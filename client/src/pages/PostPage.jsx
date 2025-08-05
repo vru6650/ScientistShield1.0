@@ -1,5 +1,3 @@
-// src/pages/PostPage.js
-
 import { Button, Spinner, Alert } from 'flowbite-react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +6,7 @@ import parse from 'html-react-parser';
 import { useEffect, useState, useMemo } from 'react';
 import hljs from 'highlight.js';
 import ImageViewer from 'react-simple-image-viewer';
-import { Helmet } from 'react-helmet-async'; // --- NEW --- SEO Meta Tags
+import { Helmet } from 'react-helmet-async';
 
 // --- Component Imports ---
 import CommentSection from '../components/CommentSection';
@@ -16,7 +14,8 @@ import PostCard from '../components/PostCard';
 import TableOfContents from '../components/TableOfContents';
 import ReadingProgressBar from '../components/ReadingProgressBar';
 import SocialShare from '../components/SocialShare';
-import ClapButton from '../components/ClapButton'; // --- NEW --- Clap Button
+import ClapButton from '../components/ClapButton';
+import CodeEditor from '../components/CodeEditor'; // NEW: Import the CodeEditor component
 import '../Tiptap.css';
 
 // --- API fetching functions ---
@@ -28,7 +27,6 @@ const fetchPostBySlug = async (postSlug) => {
     return data.posts[0];
 };
 
-// --- NEW --- Fetch related posts instead of just recent ones
 const fetchRelatedPosts = async (category) => {
     if (!category) return [];
     try {
@@ -41,7 +39,6 @@ const fetchRelatedPosts = async (category) => {
         return [];
     }
 };
-
 
 // --- Skeleton Component (Unchanged) ---
 const PostPageSkeleton = () => (
@@ -68,25 +65,21 @@ const getTextFromNode = (node) => {
     return node.children.map(getTextFromNode).join('');
 };
 
-
 export default function PostPage() {
     const { postSlug } = useParams();
 
     const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
         queryKey: ['post', postSlug],
         queryFn: () => fetchPostBySlug(postSlug),
-        staleTime: 5 * 60 * 1000, // --- NEW --- Add staleTime to avoid re-fetching too often
+        staleTime: 5 * 60 * 1000,
     });
 
-    // --- NEW --- Switched to fetching related posts. Enabled is important!
-    // This query will only run once the `post` data is available and has a category.
     const { data: relatedPosts } = useQuery({
         queryKey: ['relatedPosts', post?.category],
         queryFn: () => fetchRelatedPosts(post.category),
-        enabled: !!post, // Only run this query when `post` is loaded
+        enabled: !!post,
     });
 
-    // --- State for the Image Lightbox (Unchanged)---
     const [currentImage, setCurrentImage] = useState(0);
     const [isViewerOpen, setIsViewerOpen] = useState(false);
 
@@ -94,7 +87,6 @@ export default function PostPage() {
         return post?.content ? DOMPurify.sanitize(post.content) : '';
     }, [post?.content]);
 
-    // --- NEW --- Extract headings for the Active-State Table of Contents
     const headings = useMemo(() => {
         if (!sanitizedContent) return [];
         const tempDiv = document.createElement('div');
@@ -117,7 +109,6 @@ export default function PostPage() {
         return imageSources;
     }, [sanitizedContent]);
 
-    // Functions to open and close the lightbox (Unchanged)
     const openImageViewer = (index) => {
         setCurrentImage(index);
         setIsViewerOpen(true);
@@ -127,7 +118,6 @@ export default function PostPage() {
         setIsViewerOpen(false);
     };
 
-    // useEffect for syntax highlighting and copy button (Unchanged)
     useEffect(() => {
         if (post?.content) {
             hljs.highlightAll();
@@ -144,7 +134,7 @@ export default function PostPage() {
                         setTimeout(() => { button.innerText = 'Copy'; }, 2000);
                     });
                 });
-                pre.style.position = 'relative'; // Needed for button positioning
+                pre.style.position = 'relative';
                 pre.appendChild(button);
             });
         }
@@ -175,29 +165,31 @@ export default function PostPage() {
                             {...domNode.attribs}
                             onClick={() => openImageViewer(index)}
                             style={{ cursor: 'pointer' }}
-                            loading="lazy" // --- NEW --- Simple performance boost
+                            loading="lazy"
                         />
                     );
                 }
             }
+            // NEW: Render the CodeEditor component
+            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
+                const snippetId = domNode.attribs['data-snippet-id'];
+                return <CodeEditor snippetId={snippetId} />;
+            }
         }
     };
 
-    // --- NEW --- Helper to create a plain text description for meta tags
     const createMetaDescription = (htmlContent) => {
         if (!htmlContent) return '';
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         return tempDiv.textContent.trim().slice(0, 155) + '...';
-    }
+    };
 
     return (
         <>
-            {/* --- NEW --- Add Dynamic SEO Meta Tags --- */}
             <Helmet>
                 <title>{post.title}</title>
                 <meta name="description" content={createMetaDescription(post.content)} />
-                {/* Open Graph tags for social sharing */}
                 <meta property="og:title" content={post.title} />
                 <meta property="og:description" content={createMetaDescription(post.content)} />
                 <meta property="og:image" content={post.mediaUrl || post.image} />
@@ -219,7 +211,6 @@ export default function PostPage() {
                     <span className='italic'>{post.content ? `${Math.ceil(post.content.split(' ').length / 200)} min read` : '0 min read'}</span>
                 </div>
 
-                {/* --- NEW --- Pass the extracted headings to the TOC */}
                 <div className="max-w-2xl mx-auto w-full">
                     <TableOfContents headings={headings} />
                 </div>
@@ -228,7 +219,6 @@ export default function PostPage() {
                     {parse(sanitizedContent, parserOptions)}
                 </div>
 
-                {/* --- NEW --- Add ClapButton and SocialShare in a flex container --- */}
                 <div className="max-w-2xl mx-auto w-full px-3 my-8 flex justify-between items-center">
                     <ClapButton post={post} />
                     <SocialShare post={post} />
@@ -237,7 +227,6 @@ export default function PostPage() {
                 <CommentSection postId={post._id} />
 
                 <div className='flex flex-col justify-center items-center mb-5'>
-                    {/* --- NEW --- Changed from "Recent" to "Related" --- */}
                     <h1 className='text-xl mt-5'>Related articles</h1>
                     <div className='flex flex-wrap gap-5 mt-5 justify-center'>
                         {relatedPosts && relatedPosts.filter(p => p._id !== post._id).map((p) => <PostCard key={p._id} post={p} />)}

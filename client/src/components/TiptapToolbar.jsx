@@ -3,13 +3,14 @@ import {
     FaBold, FaItalic, FaStrikethrough, FaListUl, FaListOl, FaQuoteLeft,
     FaCode, FaLink, FaImage, FaYoutube, FaTable, FaSubscript, FaSuperscript,
     FaHighlighter, FaTasks, FaAlignLeft, FaAlignCenter, FaAlignRight, FaAlignJustify,
-    FaUndo, FaRedo, FaEraser, FaMinus
+    FaUndo, FaRedo, FaEraser, FaMinus, FaLaptopCode // NEW: Added FaLaptopCode icon
 } from 'react-icons/fa';
 import {
     LuHeading1, LuHeading2, LuHeading3, LuHeading4, LuHeading5, LuHeading6
 } from 'react-icons/lu';
 
-const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo }) => {
+// NEW: Add onAddCodeSnippet to the component's props
+const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo, onAddCodeSnippet }) => {
     if (!editor) {
         return null;
     }
@@ -77,6 +78,9 @@ const TiptapToolbar = ({ editor, onAddImage, isUploading, onAddYoutubeVideo }) =
                 <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={editor.isActive('blockquote') ? 'is-active' : ''} title="Blockquote"><FaQuoteLeft /></button>
                 <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className={editor.isActive('codeBlock') ? 'is-active' : ''} title="Code Block"><FaCode /></button>
                 <button onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><FaMinus /></button>
+                <button onClick={onAddCodeSnippet} title="Add Code Snippet"> {/* NEW: Add the new button */}
+                    <FaLaptopCode />
+                </button>
             </div>
 
             {/* Links, Images, Videos */}

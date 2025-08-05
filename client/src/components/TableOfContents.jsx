@@ -1,38 +1,29 @@
-// src/components/TableOfContents.jsx
-import { useActiveToc } from "../hooks/useActiveToc"; // --- NEW --- Import the custom hook
+import React from 'react';
+import { Link } from 'react-scroll';
 
-export default function TableOfContents({ headings }) {
-    // --- NEW --- Get the ID of the currently active heading
-    const activeId = useActiveToc(headings.map(h => h.id));
-
-    if (!headings || headings.length === 0) {
-        return null;
-    }
-
+const TableOfContents = ({ headings, activeId }) => {
     return (
-        <div className="my-8 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-            <h3 className="text-lg font-semibold mb-3">Table of Contents</h3>
+        <nav className="toc-container">
+            <h3 className="text-lg font-semibold mb-4">Table of Contents</h3>
             <ul className="space-y-2">
                 {headings.map((heading) => (
-                    <li
-                        key={heading.id}
-                        // --- NEW --- Add left padding for h3 to show hierarchy
-                        className={`${heading.level === 'h3' ? 'pl-4' : ''}`}
-                    >
-                        <a
-                            href={`#${heading.id}`}
-                            // --- NEW --- Dynamically apply active class
-                            className={`hover:text-cyan-500 transition-colors duration-200 ${
-                                activeId === heading.id
-                                    ? 'text-cyan-500 font-bold'
-                                    : 'text-gray-600 dark:text-gray-300'
+                    <li key={heading.id} className="ml-4">
+                        <Link
+                            to={heading.id}
+                            smooth={true}
+                            duration={500}
+                            offset={-70} // Adjust offset to account for a fixed header if you have one
+                            className={`block hover:text-blue-500 transition-colors duration-300 cursor-pointer ${
+                                activeId === heading.id ? 'active-toc-item' : 'toc-link'
                             }`}
                         >
                             {heading.text}
-                        </a>
+                        </Link>
                     </li>
                 ))}
             </ul>
-        </div>
+        </nav>
     );
-}
+};
+
+export default TableOfContents;

@@ -1,3 +1,4 @@
+// client/src/components/DashSidebar.jsx
 import { Sidebar } from 'flowbite-react';
 import {
   HiUser,
@@ -6,6 +7,7 @@ import {
   HiOutlineUserGroup,
   HiAnnotation,
   HiChartPie,
+  HiPuzzle, // NEW: Import puzzle icon for quizzes
 } from 'react-icons/hi';
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -18,8 +20,8 @@ const sidebarLinks = [
   { tab: 'posts', label: 'Posts', icon: HiDocumentText, adminOnly: true },
   { tab: 'users', label: 'Users', icon: HiOutlineUserGroup, adminOnly: true },
   { tab: 'comments', label: 'Comments', icon: HiAnnotation, adminOnly: true },
-  // NEW: Add Tutorials link for admin
-  { tab: 'tutorials', label: 'Tutorials', icon: HiDocumentText, adminOnly: true }, // Using same icon for now, consider new icon
+  { tab: 'tutorials', label: 'Tutorials', icon: HiDocumentText, adminOnly: true },
+  { tab: 'quizzes', label: 'Quizzes', icon: HiPuzzle, adminOnly: true }, // NEW: Add Quizzes link
 ];
 
 export default function DashSidebar() {

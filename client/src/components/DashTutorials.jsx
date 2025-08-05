@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { HiOutlineExclamationCircle } from 'react-icons/hi';
-import { getTutorials as getTutorialsService, deleteTutorial as deleteTutorialService } from '../services/tutorialService'; // NEW: Import tutorial services
+import { getTutorials as getTutorialsService, deleteTutorial as deleteTutorialService } from '../services/tutorialService';
 
 export default function DashTutorials() {
     const { currentUser } = useSelector((state) => state.user);
@@ -21,6 +21,7 @@ export default function DashTutorials() {
         hasNextPage,
         isFetchingNextPage,
     } = useInfiniteQuery({
+        // The queryKey is fine as is
         queryKey: ['adminTutorials', currentUser._id],
         queryFn: ({ pageParam = 0 }) => getTutorialsService(`authorId=${currentUser._id}&startIndex=${pageParam}`),
         initialPageParam: 0,
@@ -34,14 +35,21 @@ export default function DashTutorials() {
     const deleteMutation = useMutation({
         mutationFn: deleteTutorialService,
         onSuccess: () => {
+            // Invalidate the cache to refetch the list of tutorials
             queryClient.invalidateQueries({ queryKey: ['adminTutorials', currentUser._id] });
         },
     });
 
     const handleDeleteTutorial = () => {
         setShowModal(false);
+        // =================================================================
+        // FIX: Pass the correct object structure to the mutation
+        // =================================================================
         if (tutorialToDelete) {
-            deleteMutation.mutate(tutorialToDelete);
+            deleteMutation.mutate({
+                tutorialId: tutorialToDelete.tutorialId,
+                userId: currentUser._id // Use the current user's ID for consistency
+            });
         }
     };
 
@@ -97,7 +105,10 @@ export default function DashTutorials() {
                                         <span
                                             onClick={() => {
                                                 setShowModal(true);
-                                                setTutorialToDelete({ tutorialId: tutorial._id, userId: tutorial.authorId });
+                                                // =================================================================
+                                                // FIX: Only store the tutorial ID in state
+                                                // =================================================================
+                                                setTutorialToDelete({ tutorialId: tutorial._id });
                                             }}
                                             className='font-medium text-red-500 hover:underline cursor-pointer'
                                         >
@@ -105,6 +116,7 @@ export default function DashTutorials() {
                                         </span>
                                     </Table.Cell>
                                     <Table.Cell>
+                                        {/* You're linking to a route, this is fine, no change needed here */}
                                         <Link className='text-teal-500 hover:underline' to={`/update-tutorial/${tutorial._id}`}>
                                             <span>Edit</span>
                                         </Link>
