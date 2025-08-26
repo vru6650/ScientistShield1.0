@@ -36,9 +36,9 @@ const __dirname = path.resolve();
 
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5174';
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
 if (!process.env.CORS_ORIGIN) {
-    console.log('CORS_ORIGIN not set, using default http://localhost:5174');
+    console.log('CORS_ORIGIN not set, using default http://localhost:5173');
 }
 
 app.use(cors({
