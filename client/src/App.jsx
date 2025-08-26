@@ -8,7 +8,7 @@ import MainLayout from './components/MainLayout';
 import PrivateRoute from './components/PrivateRoute';
 import OnlyAdminPrivateRoute from './components/OnlyAdminPrivateRoute';
 
-// 1. LAZY LOAD all page components for code-splitting
+// LAZY LOAD all page components for code-splitting
 const Home = lazy(() => import('./pages/Home'));
 const About = lazy(() => import('./pages/About'));
 const SignIn = lazy(() => import('./pages/SignIn'));

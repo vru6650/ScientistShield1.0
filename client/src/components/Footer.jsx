@@ -37,21 +37,21 @@ const AuroraBackground = () => {
             onMouseMove={handleMouseMove} // Still track mouse for effect
         >
             <motion.div
-                className="absolute w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl opacity-70" // Increased blur, added opacity
+                className="absolute w-96 h-96 bg-professional-blue-500/20 rounded-full blur-3xl opacity-70" // Increased blur, added opacity
                 style={{
                     x: useTransform(smoothMouseX, val => val - 192),
                     y: useTransform(smoothMouseY, val => val - 192)
                 }}
             />
             <motion.div
-                className="absolute w-96 h-96 bg-teal-500/20 rounded-full blur-3xl opacity-70" // Increased blur, added opacity
+                className="absolute w-96 h-96 bg-accent-teal/20 rounded-full blur-3xl opacity-70" // Increased blur, added opacity
                 style={{
                     x: useTransform(smoothMouseX, val => val - 192 + 200),
                     y: useTransform(smoothMouseY, val => val - 192 + 100)
                 }}
             />
             <motion.div // Added a third, more subtle blob
-                className="absolute w-80 h-80 bg-purple-500/15 rounded-full blur-3xl opacity-60"
+                className="absolute w-80 h-80 bg-professional-blue-300/15 rounded-full blur-3xl opacity-60"
                 style={{
                     x: useTransform(smoothMouseX, val => val - 192 - 150),
                     y: useTransform(smoothMouseY, val => val - 192 - 50)
@@ -121,7 +121,7 @@ export default function FooterCom() {
                     <div className='grid w-full justify-between sm:flex md:grid-cols-1'>
                         <div className='mb-8 sm:mb-0'> {/* Increased bottom margin for logo section */}
                             <Link to='/' className='self-center whitespace-nowrap text-2xl sm:text-3xl font-extrabold dark:text-white'> {/* Larger, bolder logo */}
-                                <span className='px-3 py-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-lg text-white shadow-lg transition-transform duration-300 hover:scale-105'> {/* Stronger gradient, shadow, hover */}
+                                <span className='px-3 py-1 bg-professional-gradient rounded-lg text-white shadow-lg transition-transform duration-300 hover:scale-105'> {/* Stronger gradient, shadow, hover */}
                                     Sahand's
                                 </span>
                                 <span className="ml-2">Blog</span> {/* Added margin to "Blog" */}
@@ -141,7 +141,7 @@ export default function FooterCom() {
                                                 href={link.href}
                                                 target='_blank'
                                                 rel='noopener noreferrer'
-                                                className="text-gray-600 dark:text-gray-400 hover:text-teal-500 dark:hover:text-teal-400 transition-colors duration-200" // Enhanced link styles
+                                                className="text-gray-600 dark:text-gray-400 hover:text-accent-teal dark:hover:text-accent-teal transition-colors duration-200" // Enhanced link styles
                                             >
                                                 {link.name}
                                             </Footer.Link>
@@ -158,7 +158,7 @@ export default function FooterCom() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
-                                        className="rounded-md focus:ring-teal-500 focus:border-teal-500" // Styled input
+                                        className="rounded-md focus:ring-accent-teal focus:border-accent-teal" // Styled input
                                     />
                                     <Button
                                         type="submit"
@@ -180,7 +180,7 @@ export default function FooterCom() {
                             {socialMediaLinks.map((social) => (
                                 <Tooltip content={social.name} key={social.name} placement="top"> {/* Tooltip on top */}
                                     <motion.div
-                                        whileHover={{ y: -5, scale: 1.2, color: '#38b2ac' }} // More pronounced hover, add color
+                                        whileHover={{ y: -5, scale: 1.2, color: '#35B8A8' }} // More pronounced hover, add color
                                         whileTap={{ scale: 0.9 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 10 }}
                                         className="text-gray-500 dark:text-gray-400" // Base color for icons
@@ -204,7 +204,7 @@ export default function FooterCom() {
                 {isVisible && (
                     <motion.button
                         onClick={scrollToTop}
-                        className='fixed bottom-5 right-5 z-50 h-14 w-14 bg-teal-600 text-white rounded-full shadow-xl hover:bg-teal-700 focus:outline-none focus:ring-4 focus:ring-teal-400 focus:ring-offset-2 flex items-center justify-center' // Larger, bolder button with shadow
+                        className='fixed bottom-5 right-5 z-50 h-14 w-14 bg-accent-teal text-white rounded-full shadow-xl hover:bg-professional-blue-700 focus:outline-none focus:ring-4 focus:ring-professional-blue-400 focus:ring-offset-2 flex items-center justify-center' // Larger, bolder button with shadow
                         aria-label='Go to top of page'
                         initial={{ opacity: 0, scale: 0.7, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}

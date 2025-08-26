@@ -1,17 +1,23 @@
-// src/context/ThemeContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    // Default to light mode, or check user's system preference/localStorage
-    const [theme, setTheme] = useState('light');
+    // Check localStorage first, then system preference, default to 'light'
+    const [theme, setTheme] = useState(() => {
+        const storedTheme = localStorage.getItem('theme');
+        if (storedTheme) {
+            return storedTheme;
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    });
 
-    // Effect to apply the theme class to the body
+    // Effect to apply the theme class to the body and update localStorage
     useEffect(() => {
         const body = window.document.body;
         body.classList.remove('light', 'dark');
         body.classList.add(theme);
+        localStorage.setItem('theme', theme);
     }, [theme]);
 
     const toggleTheme = () => {

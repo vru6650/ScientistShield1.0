@@ -118,7 +118,7 @@ export const getSingleQuizBySlug = async (req, res, next) => {
 };
 
 export const updateQuiz = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to update this quiz'));
     }
     const { title, description, category, questions, relatedTutorials } = req.body;
@@ -149,7 +149,7 @@ export const updateQuiz = async (req, res, next) => {
 };
 
 export const deleteQuiz = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to delete this quiz'));
     }
     try {

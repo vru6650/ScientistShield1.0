@@ -1,127 +1,58 @@
-// src/components/Hero.jsx
+// client/src/components/Hero.jsx
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { TypeAnimation } from 'react-type-animation';
-import ParticlesBackground from './ParticlesBackground';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button, TextInput } from 'flowbite-react';
+import { useState } from 'react';
 
-// Define animation variants for cleaner orchestration
-const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.15, // Slightly faster staggering for a snappier reveal
-        },
-    },
-};
+import { HiMagnifyingGlass } from 'react-icons/hi2';
+import MatrixEffect from './MatrixEffect';
 
-const itemVariants = {
-    hidden: { y: -30, opacity: 0, scale: 0.95 }, // Slightly more pronounced initial state
-    visible: {
-        y: 0,
-        opacity: 1,
-        scale: 1,
-        transition: {
-            type: "spring", // Use spring for a bouncier, more natural feel
-            stiffness: 120,
-            damping: 15,
-            duration: 0.6 // Adjust duration with spring settings
-        },
-    },
-};
+export default function Hero() {
+    const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate();
 
-// Default props for reusability
-const defaultSequences = [
-    'Welcome to My Blog',
-    1500,
-    'Sharing Thoughts on Code...',
-    1500,
-    'And Tutorials for Developers.',
-    1500,
-    'Explore the World of Tech!', // Added another sequence for variety
-    1500,
-];
+    const handleSearch = (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams();
+        if (searchQuery.trim() !== '') {
+            params.set('searchTerm', searchQuery.trim());
+        }
+        navigate(`/tutorials?${params.toString()}`);
+    };
 
-const Hero = ({
-                  titleSequences = defaultSequences,
-                  subtitle = "Dive into a collection of insightful articles, practical tutorials, and the latest trends in web development and software engineering.", // More engaging subtitle
-                  ctaText = "Start Reading Now", // More action-oriented CTA
-                  ctaLink = "/search"
-              }) => {
     return (
-        // Container orchestrates the animation and centers content
-        <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className='relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center gap-10 p-4 text-center z-10 overflow-hidden' // Increased gap for more breathing room
-        >
-            {/* Background overlay for better text readability and depth */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 1 }}
-                className="absolute inset-0 bg-black/15 dark:bg-black/40 z-0 backdrop-blur-[1px]" // Stronger blur
-            ></motion.div>
+        <section className="relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8 text-center min-h-[500px] flex items-center justify-center">
+            {/* The MatrixEffect will now be the sole background */}
+            <MatrixEffect />
 
-            {/* For performance, consider lazy-loading the ParticlesBackground component */}
-            <ParticlesBackground />
-
-            {/* Heading with a gradient for better visual appeal */}
-            <motion.div variants={itemVariants} className="z-10">
-                <TypeAnimation
-                    sequence={titleSequences}
-                    wrapper="h1"
-                    speed={50}
-                    className='text-4xl font-extrabold lg:text-7xl bg-gradient-to-r from-teal-400 via-pink-500 to-orange-500 bg-clip-text text-transparent drop-shadow-lg' // Added drop-shadow
-                    repeat={Infinity}
-                    aria-live="polite"
-                />
-            </motion.div>
-
-            {/* Subtitle with adjusted styling */}
-            <motion.p
-                variants={itemVariants}
-                className='max-w-3xl text-gray-700 dark:text-gray-300 sm:text-xl leading-relaxed z-10' // Larger text, more relaxed leading
-            >
-                {subtitle}
-            </motion.p>
-
-            {/* Link styled as a prominent Call-to-Action (CTA) button */}
-            <motion.div variants={itemVariants} className="z-10">
-                <Link
-                    to={ctaLink}
-                    className='inline-block rounded-full bg-teal-600 px-10 py-4 text-xl font-extrabold text-white shadow-xl transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-teal-500 focus:ring-offset-2 hover:bg-teal-700' // Enhanced sizing, shadow, focus, and hover
-                    as={motion.a}
-                    whileHover={{ scale: 1.12, boxShadow: '0 12px 25px rgba(0,0,0,0.35)' }} // Stronger hover effect
-                    whileTap={{ scale: 0.93 }}
-                    transition={{ type: "spring", stiffness: 450, damping: 20 }} // Slightly stiffer spring
+            {/* Content Container */}
+            <div className="relative z-10 w-full max-w-4xl mx-auto">
+                <h1 className="text-4xl sm:text-6xl lg:text-8xl font-extrabold mb-4 sm:mb-6 leading-tight animate-fade-in-up text-professional-blue-100">
+                    Level Up Your Coding Skills
+                </h1>
+                <p className="text-lg sm:text-xl lg:text-2xl mb-8 max-w-3xl mx-auto opacity-0 animate-fade-in delay-500 text-professional-blue-200">
+                    Explore thousands of tutorials, articles, and projects to become a better developer.
+                </p>
+                <form
+                    onSubmit={handleSearch}
+                    className="flex max-w-xl mx-auto rounded-full overflow-hidden shadow-2xl transition-all duration-300 hover:scale-[1.02] focus-within:scale-[1.02] mt-8"
                 >
-                    {ctaText}
-                </Link>
-            </motion.div>
-
-            {/* Subtle Scroll Down Indicator with enhanced animation */}
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 3.0, duration: 1, repeat: Infinity, repeatType: "reverse", ease: "easeOut" }}
-                className="absolute bottom-8 flex flex-col items-center text-gray-400 dark:text-gray-500 z-10"
-            >
-                <span className="text-base font-medium mb-1">Explore</span>
-                <motion.span
-                    animate={{ y: [0, 8, 0] }} // More pronounced bounce
-                    transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }} // Slower, smoother bounce
-                    className="text-3xl text-teal-500" // Highlighted arrow
-                >
-                    &#8595;
-                </motion.span>
-            </motion.div>
-        </motion.div>
+                    <TextInput
+                        type="text"
+                        placeholder="Search for tutorials..."
+                        className="flex-grow rounded-l-full [&>div>input]:!rounded-none [&>div>input]:!border-0 [&>div>input]:!ring-0 [&>div>input]:!shadow-none [&>div>input]:bg-white/90 [&>div>input]:placeholder-gray-500 [&>div>input]:text-gray-900 focus:!ring-0"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        icon={HiMagnifyingGlass}
+                    />
+                    <Button
+                        type="submit"
+                        className="bg-sky-500 hover:bg-sky-600 text-white !rounded-none rounded-r-full h-11 w-20 transition-colors duration-300 transform hover:scale-105"
+                    >
+                        Go
+                    </Button>
+                </form>
+            </div>
+        </section>
     );
-};
-
-// Memoize the component for performance.
-export default React.memo(Hero);
+}

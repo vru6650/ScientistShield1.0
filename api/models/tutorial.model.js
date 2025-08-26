@@ -1,5 +1,42 @@
 import mongoose from 'mongoose';
 
+// Define the schema for a single sub-chapter
+const subChapterSchema = new mongoose.Schema(
+    {
+        chapterTitle: {
+            type: String,
+            required: true,
+        },
+        chapterSlug: {
+            type: String,
+            required: true,
+        },
+        contentType: {
+            type: String,
+            enum: ['text', 'code-interactive', 'quiz'],
+            default: 'text',
+        },
+        content: {
+            type: String,
+            default: '',
+        },
+        initialCode: {
+            type: String,
+            default: '',
+        },
+        quizId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Quiz',
+        },
+        order: {
+            type: Number,
+            required: true,
+        },
+    },
+    { timestamps: true }
+);
+
+// Define the schema for a single top-level chapter
 const tutorialChapterSchema = new mongoose.Schema(
     {
         chapterTitle: {
@@ -11,23 +48,19 @@ const tutorialChapterSchema = new mongoose.Schema(
             required: true,
             unique: true,
         },
-        // NEW: Field to define the content type of the chapter
         contentType: {
             type: String,
             enum: ['text', 'code-interactive', 'quiz'],
             default: 'text',
         },
-        // Content for 'text' and 'quiz' chapters
         content: {
             type: String,
-            required: true,
+            default: '',
         },
-        // NEW: Initial code for 'code-interactive' chapters
         initialCode: {
             type: String,
             default: '',
         },
-        // NEW: ID to link to a separate quiz document for 'quiz' chapters
         quizId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Quiz',
@@ -36,12 +69,12 @@ const tutorialChapterSchema = new mongoose.Schema(
             type: Number,
             required: true,
         },
-        // NEW: Array to track which users have completed this chapter
         completedBy: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
             default: [],
         }],
+        subChapters: [subChapterSchema], // Nested sub-chapters array
     },
     { timestamps: true }
 );

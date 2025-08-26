@@ -116,7 +116,7 @@ export default function PostCard({ post }) {
                     onClick={(e) => handleActionClick(e, handleBookmark)}
                     disabled={isBookmarkLoading}
                     aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark post'}
-                    className='text-teal-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 rounded-full p-1' // Added p-1 for consistent icon size
+                    className='text-professional-blue-500 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-professional-blue-500 focus:ring-offset-2 rounded-full p-1' // Added p-1 for consistent icon size
                     whileHover={{ scale: 1.2, rotate: 5 }}
                     whileTap={{ scale: 0.9 }}
                 >
@@ -173,34 +173,34 @@ export default function PostCard({ post }) {
             {/* --- Content Section --- */}
             <div className='p-4 flex flex-col gap-2 bg-white dark:bg-slate-800 flex-grow'>
                 <div className='flex justify-between items-center text-xs'>
-                    <span className='px-2 py-1 bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 rounded-full self-start font-medium tracking-wide shadow-sm'> {/* Added shadow-sm */}
+                    <span className='px-2 py-1 bg-professional-blue-100 dark:bg-professional-blue-900 text-professional-blue-700 dark:text-professional-blue-300 rounded-full self-start font-medium tracking-wide shadow-sm'> {/* Added shadow-sm */}
                         {post.category}
                     </span>
                     <span className='text-gray-500 dark:text-gray-400 text-sm italic'>{readingTime} min read</span>
                 </div>
 
-                <h3 className='text-xl font-bold line-clamp-2 dark:text-gray-100 mt-1 hover:text-teal-500 transition-colors duration-200'>{post.title}</h3>
+                <h3 className='text-xl font-bold line-clamp-2 dark:text-gray-100 mt-1 hover:text-professional-blue-500 transition-colors duration-200'>{post.title}</h3>
 
                 <div className='flex items-center gap-2 mt-2'>
                     {post.author?.profilePicture ? (
                         <img
                             src={post.author.profilePicture}
                             alt={post.author.name || 'Author'}
-                            className='w-8 h-8 rounded-full object-cover border-2 border-teal-400 shadow-md' // Added shadow-md
+                            className='w-8 h-8 rounded-full object-cover border-2 border-professional-blue-400 shadow-md' // Added shadow-md
                         />
                     ) : (
                         <div className='w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse'></div>
                     )}
-                    <span className='text-sm text-gray-600 dark:text-gray-300 font-medium hover:text-teal-500 transition-colors duration-200'>{post.author?.name || 'Anonymous'}</span>
+                    <span className='text-sm text-gray-600 dark:text-gray-300 font-medium hover:text-professional-blue-500 transition-colors duration-200'>{post.author?.name || 'Anonymous'}</span>
                 </div>
 
                 <Link
                     to={`/post/${post.slug}`}
-                    className='mt-auto w-full text-center border-2 border-teal-500 text-teal-500 font-bold py-2 rounded-lg'
+                    className='mt-auto w-full text-center border-2 border-professional-blue-500 text-professional-blue-500 font-bold py-2 rounded-lg'
                     as={motion.a}
                     whileHover={{
                         scale: 1.05,
-                        backgroundColor: 'rgb(20 184 166)',
+                        backgroundColor: '#3a8adf',
                         color: 'white',
                         boxShadow: '0 8px 20px rgba(0, 0, 0, 0.3)' // Slightly stronger shadow
                     }}

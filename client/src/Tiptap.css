@@ -194,6 +194,36 @@ html {
 
 
 
+/* Example CSS for active buttons */
+.is-active {
+    background-color: #3b82f6 !important; /* Blue background */
+    color: white !important;
+    border-color: #3b82f6 !important;
+}
 
+/* Style for the color input */
+input[type="color"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    padding: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-sizing: content-box;
+    border: 1px solid #d1d5db; /* A subtle border */
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+    border: none;
+}
 
 

@@ -1,3 +1,4 @@
+// client/src/pages/PostPage.jsx
 import { Button, Spinner, Alert } from 'flowbite-react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -15,7 +16,7 @@ import TableOfContents from '../components/TableOfContents';
 import ReadingProgressBar from '../components/ReadingProgressBar';
 import SocialShare from '../components/SocialShare';
 import ClapButton from '../components/ClapButton';
-import CodeEditor from '../components/CodeEditor'; // NEW: Import the CodeEditor component
+import CodeEditor from '../components/CodeEditor';
 import '../Tiptap.css';
 
 // --- API fetching functions ---

@@ -96,7 +96,7 @@ export const getTutorials = async (req, res, next) => {
 };
 
 export const updateTutorial = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to update this tutorial'));
     }
     const { title, description, category, thumbnail } = req.body;
@@ -126,7 +126,7 @@ export const updateTutorial = async (req, res, next) => {
 };
 
 export const deleteTutorial = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to delete this tutorial'));
     }
     try {
@@ -138,7 +138,7 @@ export const deleteTutorial = async (req, res, next) => {
 };
 
 export const addChapter = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to add chapters to this tutorial'));
     }
     const { chapterTitle, content, order, contentType, initialCode, expectedOutput, quizId } = req.body;
@@ -185,7 +185,7 @@ export const addChapter = async (req, res, next) => {
 };
 
 export const updateChapter = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to update this chapter'));
     }
     const { chapterTitle, content, order } = req.body;
@@ -224,7 +224,7 @@ export const updateChapter = async (req, res, next) => {
 };
 
 export const deleteChapter = async (req, res, next) => {
-    if (!req.user.isAdmin || req.user.id !== req.params.userId) {
+    if (!req.user.isAdmin && req.user.id !== req.params.userId) {
         return next(errorHandler(403, 'You are not allowed to delete this chapter'));
     }
     try {
@@ -240,7 +240,6 @@ export const deleteChapter = async (req, res, next) => {
         next(error);
     }
 };
-
 
 // NEW: Function to mark a chapter as complete
 export const markChapterAsComplete = async (req, res, next) => {

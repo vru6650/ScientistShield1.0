@@ -9,6 +9,10 @@ import commentRoutes from './routes/comment.route.js';
 import tutorialRoutes from './routes/tutorial.route.js';
 import quizRoutes from './routes/quiz.route.js';
 import codeSnippetRoutes from './routes/codeSnippet.route.js';
+import cppRoutes from './routes/cpp.route.js'; // NEW: Import the C++ route
+import pythonRoutes from './routes/python.route.js'; // NEW: Import the Python route
+
+
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
@@ -47,6 +51,10 @@ app.use('/api/comment', commentRoutes);
 app.use('/api/tutorial', tutorialRoutes);
 app.use('/api/code-snippet', codeSnippetRoutes);
 app.use('/api', quizRoutes);
+app.use('/api/code', cppRoutes); // NEW: Use the new C++ route
+app.use('/api/code', pythonRoutes); // NEW: Use the new Python route
+
+
 
 app.use(express.static(path.join(__dirname, '/client/dist')));
 

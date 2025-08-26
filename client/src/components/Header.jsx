@@ -1,4 +1,6 @@
-import { Avatar, Button, Dropdown, Navbar, TextInput, Tooltip, Modal } from 'flowbite-react';
+// client/src/components/Header.jsx
+
+import { Avatar, Button, Navbar, TextInput, Tooltip, Modal } from 'flowbite-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AiOutlineSearch } from 'react-icons/ai';
 import { FaMoon, FaSun } from 'react-icons/fa';
@@ -93,6 +95,7 @@ export default function Header() {
 
   const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // NEW: State for the custom dropdown
   const { scrollY } = useScroll();
   const headerRef = useRef(null);
 
@@ -134,18 +137,45 @@ export default function Header() {
     }
   };
 
+  // Staggered animation variants (unchanged)
+  const navContainerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const navItemVariants = {
+    hidden: { opacity: 0, y: -20 },
+    show: { opacity: 1, y: 0 },
+  };
+
+  // NEW: Dropdown animation variants
+  const dropdownVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: -10 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        duration: 0.2,
+      },
+    },
+    exit: { opacity: 0, scale: 0.9, y: -10, transition: { duration: 0.2 } },
+  };
+
   return (
       <>
         <motion.header
-            className='fixed top-0 left-0 right-0 z-50 p-2 sm:p-3' // Increased z-index
+            className='fixed top-0 left-0 right-0 z-50 p-2 sm:p-3'
             initial={{ y: -100 }}
             animate={{ y: isHeaderVisible ? 0 : -100 }}
             transition={{ duration: 0.35, ease: 'easeInOut' }}
         >
-          {/* --- FIX: Main container for positioning, no overflow --- */}
           <div ref={headerRef} onMouseMove={handleMouseMove} className='relative mx-auto max-w-6xl'>
-
-            {/* --- FIX: New background layer with overflow-hidden to contain the spotlight --- */}
             <motion.div
                 className='absolute inset-0 h-full w-full rounded-full border shadow-lg backdrop-blur-lg overflow-hidden'
                 style={{
@@ -162,28 +192,31 @@ export default function Header() {
                   }}
               />
             </motion.div>
-
-            {/* --- FIX: Interactive Navbar sits on top in its own layer, not clipped --- */}
             <Navbar fluid rounded className='bg-transparent dark:bg-transparent relative z-10'>
               <Link to='/' className='text-sm sm:text-xl font-semibold text-gray-700 dark:text-white'>
-                            <span className='px-2 py-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 rounded-lg text-white animated-gradient'>
+                            <span className='px-2 py-1 bg-professional-gradient rounded-lg text-white animated-gradient'>
                                 Scientist
                             </span>
                 Shield
               </Link>
-
-              <div className='hidden lg:flex items-center gap-1'>
+              <motion.div
+                  className='hidden lg:flex items-center gap-1'
+                  variants={navContainerVariants}
+                  initial="hidden"
+                  animate="show"
+              >
                 {navLinks.map((link) => {
                   const isActive = path === link.path;
                   return (
-                      <Link to={link.path} key={link.path} className='relative px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors'>
-                        {isActive && (<motion.span layoutId='active-pill' className='absolute inset-0 bg-gray-100 dark:bg-gray-700 rounded-full' style={{ borderRadius: 9999 }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} />)}
-                        <span className='relative z-10'>{link.label}</span>
-                      </Link>
+                      <motion.div variants={navItemVariants} key={link.path}>
+                        <Link to={link.path} className='relative px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors'>
+                          {isActive && (<motion.span layoutId='active-pill' className='absolute inset-0 bg-gray-100 dark:bg-gray-700 rounded-full' style={{ borderRadius: 9999 }} transition={{ type: 'spring', stiffness: 300, damping: 30 }} />)}
+                          <span className='relative z-10'>{link.label}</span>
+                        </Link>
+                      </motion.div>
                   );
                 })}
-              </div>
-
+              </motion.div>
               <div className='flex items-center gap-3 md:order-2'>
                 <Magnetic>
                   <Tooltip content="Search (⌘+K)">
@@ -192,7 +225,6 @@ export default function Header() {
                     </Button>
                   </Tooltip>
                 </Magnetic>
-
                 <Magnetic>
                   <Tooltip content="Toggle Theme">
                     <Button className='w-12 h-10 hidden sm:inline' color='gray' pill onClick={() => dispatch(toggleTheme())}>
@@ -204,30 +236,55 @@ export default function Header() {
                     </Button>
                   </Tooltip>
                 </Magnetic>
-
                 {currentUser ? (
-                    <Dropdown arrowIcon={false} inline label={<Avatar alt='user' img={currentUser.profilePicture} rounded bordered color="light-blue" />}>
-                      <Dropdown.Header>
-                        <span className='block text-sm'>@{currentUser.username}</span>
-                        <span className='block text-sm font-medium truncate'>{currentUser.email}</span>
-                      </Dropdown.Header>
-                      <Link to={'/dashboard?tab=profile'}><Dropdown.Item>Profile</Dropdown.Item></Link>
-                      <Dropdown.Divider />
-                      <Dropdown.Item onClick={handleSignout}>Sign out</Dropdown.Item>
-                    </Dropdown>
+                    <div className="relative">
+                      <Avatar
+                          alt='user'
+                          img={currentUser.profilePicture}
+                          rounded
+                          bordered
+                          color="light-blue"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          className="cursor-pointer"
+                      />
+                      <AnimatePresence>
+                        {isDropdownOpen && (
+                            <motion.div
+                                variants={dropdownVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 bg-white border border-gray-200 z-50 origin-top-right"
+                            >
+                              <div className="p-4">
+                                <span className='block text-sm'>@{currentUser.username}</span>
+                                <span className='block text-sm font-medium truncate text-gray-500 dark:text-gray-400'>{currentUser.email}</span>
+                              </div>
+                              <hr className="dark:border-gray-600" />
+                              <Link to={'/dashboard?tab=profile'} onClick={() => setIsDropdownOpen(false)}>
+                                <div className='block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer'>
+                                  Profile
+                                </div>
+                              </Link>
+                              <hr className="dark:border-gray-600" />
+                              <div className='block px-4 py-2 text-sm text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900 cursor-pointer' onClick={handleSignout}>
+                                Sign out
+                              </div>
+                            </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                 ) : (
                     <Link to='/sign-in'><Button gradientDuoTone='purpleToBlue' outline>Sign In</Button></Link>
                 )}
                 <Navbar.Toggle />
               </div>
-
               <Navbar.Collapse>
                 {navLinks.map((link) => (<Navbar.Link active={path === link.path} as={'div'} key={link.path} className="lg:hidden"><Link to={link.path}>{link.label}</Link></Navbar.Link>))}
               </Navbar.Collapse>
             </Navbar>
           </div>
         </motion.header>
-
         <CommandMenu isOpen={isCommandMenuOpen} onClose={() => setIsCommandMenuOpen(false)} />
       </>
   );

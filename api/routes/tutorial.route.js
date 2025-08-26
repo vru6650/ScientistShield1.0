@@ -8,7 +8,7 @@ import {
     addChapter,
     updateChapter,
     deleteChapter,
-    markChapterAsComplete // NEW: Import the new controller function
+    markChapterAsComplete
 } from '../controllers/tutorial.controller.js';
 
 const router = express.Router();
@@ -24,6 +24,8 @@ router.put('/update/:tutorialId/:userId', verifyToken, updateTutorial);
 router.delete('/delete/:tutorialId/:userId', verifyToken, deleteTutorial);
 
 // Chapter operations (admin-only)
+// The addChapter route will now handle adding both top-level chapters and subchapters.
+// The parent chapter ID is passed in the request body.
 router.post('/addchapter/:tutorialId/:userId', verifyToken, addChapter);
 router.put('/updatechapter/:tutorialId/:chapterId/:userId', verifyToken, updateChapter);
 router.delete('/deletechapter/:tutorialId/:chapterId/:userId', verifyToken, deleteChapter);

@@ -1,185 +1,230 @@
-import { Button, TextInput, Select, Textarea } from 'flowbite-react';
-import TiptapEditor from './TiptapEditor'; // Assuming TiptapEditor is in the same directory or adjust path
-import { useRef } from 'react';
+// client/src/components/DraggableChapter.jsx
+import { useRef, useState, useMemo } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { FaTrash, FaCode, FaQuestionCircle } from 'react-icons/fa';
+import { Button, Select, TextInput, Textarea, Spinner, Alert, Tooltip } from 'flowbite-react';
+import { FaTrash, FaChevronUp, FaChevronDown, FaCode, FaBook, FaList, FaQuestionCircle } from 'react-icons/fa';
+import TiptapEditor from './TiptapEditor';
+import { motion } from 'framer-motion';
 
 const ItemTypes = {
     CHAPTER: 'chapter',
 };
 
-const DraggableChapter = ({ chapter, index, dispatch, handleChapterFieldChange, handleChapterContentChange, moveChapter, quizzesData, quizzesLoading, quizzesError }) => {
+const DraggableChapter = ({
+                              chapter,
+                              index,
+                              dispatch,
+                              handleChapterFieldChange,
+                              handleChapterContentChange,
+                              moveChapter,
+                              quizzesData,
+                              quizzesLoading,
+                              quizzesError,
+                          }) => {
     const ref = useRef(null);
+    const [isExpanded, setIsExpanded] = useState(false);
 
-    const [{ isDragging }, drag] = useDrag({
-        type: ItemTypes.CHAPTER,
-        item: { index },
-        collect: (monitor) => ({
-            isDragging: monitor.isDragging(),
-        }),
-    });
-
-    const [, drop] = useDrop({
+    const [{ handlerId }, drop] = useDrop({
         accept: ItemTypes.CHAPTER,
+        collect(monitor) {
+            return { handlerId: monitor.getHandlerId() };
+        },
         hover(item, monitor) {
-            if (!ref.current) {
-                return;
-            }
+            if (!ref.current) return;
             const dragIndex = item.index;
             const hoverIndex = index;
-
-            if (dragIndex === hoverIndex) {
-                return;
-            }
+            if (dragIndex === hoverIndex) return;
 
             const hoverBoundingRect = ref.current?.getBoundingClientRect();
             const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
             const clientOffset = monitor.getClientOffset();
             const hoverClientY = clientOffset.y - hoverBoundingRect.top;
 
-            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-                return;
-            }
-            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-                return;
-            }
+            if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) return;
+            if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
 
             moveChapter(dragIndex, hoverIndex);
             item.index = hoverIndex;
         },
     });
 
+    const [{ isDragging }, drag] = useDrag({
+        type: ItemTypes.CHAPTER,
+        item: () => ({ id: chapter._id, index }),
+        collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+    });
+
     drag(drop(ref));
 
-    const opacity = isDragging ? 0.5 : 1;
-    const availableQuizzes = quizzesData || [];
+    const handleRemoveChapter = () => {
+        dispatch({ type: 'REMOVE_CHAPTER', payload: { index } });
+    };
+
+    const chapterVariants = {
+        collapsed: { opacity: 1, height: 'auto', transition: { duration: 0.2 } },
+        expanded: { opacity: 1, height: 'auto', transition: { duration: 0.2 } },
+    };
+
+    const contentVariants = {
+        collapsed: { height: 0, opacity: 0, overflow: 'hidden', transition: { duration: 0.3 } },
+        expanded: { height: 'auto', opacity: 1, overflow: 'visible', transition: { duration: 0.3 } },
+    };
+
+    const renderContentTypeIcon = (type) => {
+        switch (type) {
+            case 'text': return <FaBook className="text-teal-500" />;
+            case 'code-interactive': return <FaCode className="text-blue-500" />;
+            case 'quiz': return <FaList className="text-purple-500" />;
+            default: return null;
+        }
+    };
+
+    const renderContentInput = useMemo(() => {
+        switch (chapter.contentType) {
+            case 'text':
+                return (
+                    <div className='flex flex-col gap-2'>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Chapter Content</p>
+                        <TiptapEditor
+                            content={chapter.content || ''}
+                            onChange={(newContent) => handleChapterContentChange(index, newContent)}
+                            placeholder="Start writing your chapter content here..."
+                        />
+                    </div>
+                );
+            case 'code-interactive':
+                return (
+                    <div className='flex flex-col gap-4'>
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center gap-2'>
+                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Initial Code</p>
+                                <Tooltip content="This code will be displayed in the interactive editor for the user to start with.">
+                                    <FaQuestionCircle className="text-gray-400 cursor-help" />
+                                </Tooltip>
+                            </div>
+                            <Textarea
+                                rows={8}
+                                placeholder="Enter the initial code here..."
+                                value={chapter.initialCode || ''}
+                                onChange={(e) => handleChapterFieldChange(index, 'initialCode', e.target.value)}
+                            />
+                        </div>
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center gap-2'>
+                                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Output</p>
+                                <Tooltip content="The expected output of the code. This will be used to validate the user's solution. Leave blank if not needed.">
+                                    <FaQuestionCircle className="text-gray-400 cursor-help" />
+                                </Tooltip>
+                            </div>
+                            <TextInput
+                                type="text"
+                                placeholder="e.g., Hello, World!"
+                                value={chapter.expectedOutput || ''}
+                                onChange={(e) => handleChapterFieldChange(index, 'expectedOutput', e.target.value)}
+                            />
+                        </div>
+                    </div>
+                );
+            case 'quiz':
+                return (
+                    <div className='flex flex-col gap-2'>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Select a Quiz</p>
+                        <Select
+                            value={chapter.quizId || ''}
+                            onChange={(e) => handleChapterFieldChange(index, 'quizId', e.target.value)}
+                            disabled={quizzesLoading}
+                        >
+                            <option value="">
+                                {quizzesLoading ? 'Loading quizzes...' : 'Select a quiz...'}
+                            </option>
+                            {quizzesError ? (
+                                <option disabled>Error loading quizzes</option>
+                            ) : (
+                                quizzesData.map((quiz) => (
+                                    <option key={quiz._id} value={quiz._id}>
+                                        {quiz.title}
+                                    </option>
+                                ))
+                            )}
+                        </Select>
+                        {quizzesError && <Alert color="failure" className="mt-2">Failed to load quizzes.</Alert>}
+                        {quizzesLoading && <Spinner size="md" className="mt-2" />}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    }, [chapter, index, quizzesData, quizzesLoading, quizzesError, handleChapterContentChange, handleChapterFieldChange]);
 
     return (
-        <div
+        <motion.div
             ref={ref}
-            style={{ opacity }}
-            className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 relative mb-4 transition-all duration-200 ease-in-out shadow-md"
+            variants={chapterVariants}
+            initial="collapsed"
+            animate={isExpanded ? "expanded" : "collapsed"}
+            data-handler-id={handlerId}
+            style={{ opacity: isDragging ? 0.5 : 1, cursor: 'grab' }}
+            className={`
+                bg-gray-100 dark:bg-gray-800 p-4 rounded-lg shadow-md border
+                ${isExpanded ? 'border-teal-500' : 'border-gray-300 dark:border-gray-700'}
+            `}
         >
-            <div className="flex justify-between items-center mb-3">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Chapter {chapter.order}</h3>
-                <div className="flex gap-2">
-                    <Button
-                        type="button"
-                        color="red"
-                        size="sm"
-                        onClick={() => dispatch({ type: 'REMOVE_CHAPTER', payload: { index } })}
-                        className="p-1"
-                        title="Remove Chapter"
-                    >
+            <div className='flex items-center justify-between gap-4 cursor-pointer' onClick={() => setIsExpanded(!isExpanded)}>
+                <div className='flex items-center gap-4 flex-1 min-w-0'>
+                    <span className="text-xl font-bold text-gray-500 dark:text-gray-400">{chapter.order}.</span>
+                    <span className='font-semibold text-ellipsis overflow-hidden whitespace-nowrap flex-1'>{chapter.chapterTitle || `Untitled Chapter ${chapter.order}`}</span>
+                </div>
+                <div className='flex items-center gap-3'>
+                    <span className='text-sm text-gray-500 dark:text-gray-400 hidden sm:flex items-center gap-1'>
+                        {renderContentTypeIcon(chapter.contentType)}
+                        <span className="ml-1 hidden sm:inline-block">
+                            {chapter.contentType === 'text' && 'Text Content'}
+                            {chapter.contentType === 'code-interactive' && 'Code Example'}
+                            {chapter.contentType === 'quiz' && 'Quiz'}
+                        </span>
+                    </span>
+                    <Button onClick={(e) => { e.stopPropagation(); handleRemoveChapter(); }} color="failure" size="xs" outline>
                         <FaTrash />
+                    </Button>
+                    <Button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} color="gray" size="xs" outline>
+                        {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                <TextInput
-                    type='text'
-                    placeholder='Chapter Title'
-                    required
-                    value={chapter.chapterTitle}
-                    onChange={(e) => handleChapterFieldChange(index, 'chapterTitle', e.target.value)}
-                    className="w-full"
-                />
-                <TextInput
-                    type='text'
-                    placeholder='chapter-slug'
-                    value={chapter.chapterSlug}
-                    readOnly
-                    disabled
-                    className="w-full bg-gray-100 dark:bg-gray-700"
-                />
-            </div>
 
-            <div className="mb-4">
-                <label htmlFor={`contentType-${index}`} className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">Content Type</label>
-                <Select
-                    id={`contentType-${index}`}
-                    value={chapter.contentType}
-                    onChange={(e) => {
-                        handleChapterFieldChange(index, 'contentType', e.target.value);
-                        if (e.target.value === 'text') {
-                            handleChapterFieldChange(index, 'initialCode', '');
-                            handleChapterFieldChange(index, 'expectedOutput', '');
-                            handleChapterFieldChange(index, 'quizId', '');
-                        } else if (e.target.value === 'code-interactive') {
-                            handleChapterFieldChange(index, 'quizId', '');
-                        } else if (e.target.value === 'quiz') {
-                            handleChapterContentChange(index, '');
-                            handleChapterFieldChange(index, 'initialCode', '');
-                            handleChapterFieldChange(index, 'expectedOutput', '');
-                        }
-                    }}
-                >
-                    <option value="text">Text Content</option>
-                    <option value="code-interactive">Interactive Code Example</option>
-                    <option value="quiz">Linked Quiz</option>
-                </Select>
-            </div>
-
-            {chapter.contentType === 'code-interactive' && (
-                <div className="mb-4">
-                    <label htmlFor={`initialCode-${index}`} className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300 flex items-center gap-1"><FaCode /> Initial Code</label>
-                    <Textarea
-                        id={`initialCode-${index}`}
-                        placeholder='Write the initial code for the interactive example (e.g., console.log("Hello")). This will appear in the editor.'
-                        value={chapter.initialCode}
-                        onChange={(e) => handleChapterFieldChange(index, 'initialCode', e.target.value)}
-                        rows={6}
-                        className="min-h-[100px]"
-                    />
-                    <label htmlFor={`expectedOutput-${index}`} className="block mt-4 mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">Expected Output (Optional)</label>
-                    <Textarea
-                        id={`expectedOutput-${index}`}
-                        placeholder='Enter the exact expected output for automated testing/validation (e.g., "Hello" if console.log("Hello")).'
-                        value={chapter.expectedOutput}
-                        onChange={(e) => handleChapterFieldChange(index, 'expectedOutput', e.target.value)}
-                        rows={3}
-                        className="min-h-[60px]"
-                    />
+            <motion.div
+                variants={contentVariants}
+                initial="collapsed"
+                animate={isExpanded ? "expanded" : "collapsed"}
+            >
+                <div className='flex flex-col gap-4 mt-6'>
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Chapter Title</p>
+                        <TextInput
+                            type="text"
+                            placeholder="e.g., Introduction to React"
+                            value={chapter.chapterTitle || ''}
+                            onChange={(e) => handleChapterFieldChange(index, 'chapterTitle', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            required
+                        />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Content Type</p>
+                        <Select
+                            value={chapter.contentType || 'text'}
+                            onChange={(e) => handleChapterFieldChange(index, 'contentType', e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <option value="text">Text Content</option>
+                            <option value="code-interactive">Interactive Code Example</option>
+                            <option value="quiz">Linked Quiz</option>
+                        </Select>
+                    </div>
+                    {renderContentInput}
                 </div>
-            )}
-
-            {chapter.contentType === 'quiz' && (
-                <div className="mb-4">
-                    <label htmlFor={`quizId-${index}`} className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300 flex items-center gap-1"><FaQuestionCircle /> Link Quiz</label>
-                    <Select
-                        id={`quizId-${index}`}
-                        value={chapter.quizId || ''}
-                        onChange={(e) => handleChapterFieldChange(index, 'quizId', e.target.value)}
-                        disabled={quizzesLoading || quizzesError}
-                    >
-                        <option value="">Select a Quiz</option>
-                        {quizzesLoading ? (
-                            <option disabled>Loading quizzes...</option>
-                        ) : quizzesError ? (
-                            <option disabled>Error loading quizzes</option>
-                        ) : (
-                            availableQuizzes.map(quiz => (
-                                <option key={quiz._id} value={quiz._id}>{quiz.title}</option>
-                            ))
-                        )}
-                    </Select>
-                    {quizzesError && <p className="text-red-500 text-sm mt-1">Failed to load quizzes.</p>}
-                </div>
-            )}
-
-            {(chapter.contentType === 'text' || chapter.contentType === 'code-interactive') && (
-                <div className="mb-4">
-                    <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
-                        {chapter.contentType === 'text' ? 'Chapter Content' : 'Description for Interactive Code (Optional)'}
-                    </label>
-                    <TiptapEditor
-                        content={chapter.content}
-                        onChange={(newContent) => handleChapterContentChange(index, newContent)}
-                        placeholder={chapter.contentType === 'text' ? `Write content for Chapter ${chapter.order}...` : `Add a description or instructions for the interactive code example in Chapter ${chapter.order}...`}
-                    />
-                </div>
-            )}
-        </div>
+            </motion.div>
+        </motion.div>
     );
 };
 
