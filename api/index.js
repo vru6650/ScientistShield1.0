@@ -12,17 +12,21 @@ import codeSnippetRoutes from './routes/codeSnippet.route.js';
 import cppRoutes from './routes/cpp.route.js'; // NEW: Import the C++ route
 import pythonRoutes from './routes/python.route.js'; // NEW: Import the Python route
 
-
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
 
 dotenv.config();
 
+const mongoUri = process.env.MONGO_URI || 'mongodb://0.0.0.0:27017/myappp';
+if (!process.env.MONGO_URI) {
+    console.log('MONGO_URI not set, using default mongodb://0.0.0.0:27017/myappp');
+}
+
 mongoose
-    .connect('mongodb://0.0.0.0:27017/myappp')
+    .connect(mongoUri)
     .then(() => {
-        console.log("db");
+        console.log('db');
     })
     .catch((err) => {
         console.log(err);
@@ -32,16 +36,26 @@ const __dirname = path.resolve();
 
 const app = express();
 
+const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5174';
+if (!process.env.CORS_ORIGIN) {
+    console.log('CORS_ORIGIN not set, using default http://localhost:5174');
+}
+
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: corsOrigin,
     credentials: true,
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000!');
+const port = process.env.PORT || 3000;
+if (!process.env.PORT) {
+    console.log('PORT not set, using default 3000');
+}
+
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}!`);
 });
 
 app.use('/api/user', userRoutes);
@@ -53,8 +67,6 @@ app.use('/api/code-snippet', codeSnippetRoutes);
 app.use('/api', quizRoutes);
 app.use('/api/code', cppRoutes); // NEW: Use the new C++ route
 app.use('/api/code', pythonRoutes); // NEW: Use the new Python route
-
-
 
 app.use(express.static(path.join(__dirname, '/client/dist')));
 

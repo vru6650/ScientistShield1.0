@@ -1,7 +1,14 @@
 import express from 'express';
 import { verifyToken } from '../utils/verifyUser.js';
 // --- NEW --- Make sure to import clapPost from your controller
-import { create, deletepost, getposts, updatepost, clapPost,bookmarkPost } from '../controllers/post.controller.js';
+import {
+    create,
+    deletepost,
+    getposts,
+    updatepost,
+    clapPost,
+    bookmarkPost,
+} from '../controllers/post.controller.js';
 
 const router = express.Router();
 
@@ -16,6 +23,5 @@ router.put('/updatepost/:postId/:userId', verifyToken, updatepost);
 router.put('/clap/:postId', verifyToken, clapPost);
 // ... other routes
 router.put('/:postId/bookmark', verifyToken, bookmarkPost);
-
 
 export default router;

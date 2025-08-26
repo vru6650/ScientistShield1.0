@@ -1,6 +1,8 @@
+// api/controllers/cpp.controller.js
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid'; // Use uuid to create unique filenames
 import { errorHandler } from '../utils/error.js';
 
@@ -8,10 +10,10 @@ import { errorHandler } from '../utils/error.js';
 const __dirname = path.resolve();
 const TEMP_DIR = path.join(__dirname, 'temp');
 
-// Ensure the temporary directory exists
-if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR);
-}
+// Ensure the temporary directory exists asynchronously
+await fs.promises.mkdir(TEMP_DIR, { recursive: true });
+
+const execAsync = promisify(exec);
 
 export const runCppCode = async (req, res, next) => {
     const { code } = req.body;
@@ -25,43 +27,31 @@ export const runCppCode = async (req, res, next) => {
 
     try {
         // 1. Write the code to a temporary file
-        fs.writeFileSync(filePath, code);
+        await fs.promises.writeFile(filePath, code);
 
         // 2. Compile the C++ code
         const compileCommand = `g++ "${filePath}" -o "${executablePath}"`;
-        await new Promise((resolve, reject) => {
-            exec(compileCommand, (error, stdout, stderr) => {
-                if (error) {
-                    return reject(stderr);
-                }
-                resolve();
-            });
-        });
+        await execAsync(compileCommand);
 
         // 3. Execute the compiled program
-        const executeCommand = `"${executablePath}"`;
-        exec(executeCommand, (error, stdout, stderr) => {
-            // 4. Send the output back to the client
-            if (error) {
-                res.status(200).json({ output: stderr, error: true });
-            } else {
-                res.status(200).json({ output: stdout, error: false });
-            }
+        const { stdout } = await execAsync(`"${executablePath}"`);
 
-            // 5. Clean up temporary files
-            fs.unlink(filePath, (err) => {
-                if (err) console.error('Error deleting source file:', err);
-            });
-            fs.unlink(executablePath, (err) => {
-                if (err) console.error('Error deleting executable file:', err);
-            });
-        });
+        // 4. Send the output back to the client
+        res.status(200).json({ output: stdout, error: false });
     } catch (err) {
-        res.status(200).json({ output: err, error: true });
-
-        // Ensure cleanup even on compilation failure
-        fs.unlink(filePath, (err) => {
-            if (err) console.error('Error deleting source file:', err);
-        });
+        const output = err?.stderr || err?.message || String(err);
+        res.status(200).json({ output, error: true });
+    } finally {
+        // 5. Clean up temporary files
+        try {
+            await fs.promises.unlink(filePath);
+        } catch (e) {
+            // Ignore cleanup errors
+        }
+        try {
+            await fs.promises.unlink(executablePath);
+        } catch (e) {
+            // Ignore cleanup errors
+        }
     }
 };

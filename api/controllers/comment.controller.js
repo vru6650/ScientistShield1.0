@@ -6,7 +6,7 @@ export const createComment = async (req, res, next) => {
 
     if (userId !== req.user.id) {
       return next(
-        errorHandler(403, 'You are not allowed to create this comment')
+          errorHandler(403, 'You are not allowed to create this comment')
       );
     }
 
@@ -63,16 +63,16 @@ export const editComment = async (req, res, next) => {
     }
     if (comment.userId !== req.user.id && !req.user.isAdmin) {
       return next(
-        errorHandler(403, 'You are not allowed to edit this comment')
+          errorHandler(403, 'You are not allowed to edit this comment')
       );
     }
 
     const editedComment = await Comment.findByIdAndUpdate(
-      req.params.commentId,
-      {
-        content: req.body.content,
-      },
-      { new: true }
+        req.params.commentId,
+        {
+          content: req.body.content,
+        },
+        { new: true }
     );
     res.status(200).json(editedComment);
   } catch (error) {
@@ -88,7 +88,7 @@ export const deleteComment = async (req, res, next) => {
     }
     if (comment.userId !== req.user.id && !req.user.isAdmin) {
       return next(
-        errorHandler(403, 'You are not allowed to delete this comment')
+          errorHandler(403, 'You are not allowed to delete this comment')
       );
     }
     await Comment.findByIdAndDelete(req.params.commentId);
@@ -98,7 +98,7 @@ export const deleteComment = async (req, res, next) => {
   }
 };
 
-export const getcomments = async (req, res, next) => {
+export const getComments = async (req, res, next) => {
   if (!req.user.isAdmin)
     return next(errorHandler(403, 'You are not allowed to get all comments'));
   try {
@@ -106,15 +106,15 @@ export const getcomments = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 9;
     const sortDirection = req.query.sort === 'desc' ? -1 : 1;
     const comments = await Comment.find()
-      .sort({ createdAt: sortDirection })
-      .skip(startIndex)
-      .limit(limit);
+        .sort({ createdAt: sortDirection })
+        .skip(startIndex)
+        .limit(limit);
     const totalComments = await Comment.countDocuments();
     const now = new Date();
     const oneMonthAgo = new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      now.getDate()
+        now.getFullYear(),
+        now.getMonth() - 1,
+        now.getDate()
     );
     const lastMonthComments = await Comment.countDocuments({
       createdAt: { $gte: oneMonthAgo },

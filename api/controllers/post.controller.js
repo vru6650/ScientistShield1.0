@@ -1,5 +1,6 @@
 import Post from '../models/post.model.js';
 import { errorHandler } from '../utils/error.js';
+import { generateSlug } from '../utils/slug.js';
 
 // --- CREATE, DELETEPOST, UPDATEPOST functions are here ---
 // (Your existing code for these functions remains unchanged)
@@ -11,11 +12,7 @@ export const create = async (req, res, next) => {
   if (!req.body.title || !req.body.content) {
     return next(errorHandler(400, 'Please provide all required fields'));
   }
-  const slug = req.body.title
-      .split(' ')
-      .join('-')
-      .toLowerCase()
-      .replace(/[^a-zA-Z0-9-]/g, '');
+  const slug = generateSlug(req.body.title);
   const newPost = new Post({
     ...req.body,
     slug,
@@ -107,13 +104,7 @@ export const updatepost = async (req, res, next) => {
     return next(errorHandler(403, 'You are not allowed to update this post'));
   }
   try {
-    const slug = req.body.title
-        ? req.body.title
-            .split(' ')
-            .join('-')
-            .toLowerCase()
-            .replace(/[^a-zA-Z0-9-]/g, '')
-        : undefined;
+    const slug = req.body.title ? generateSlug(req.body.title) : undefined;
 
     const updatedPost = await Post.findByIdAndUpdate(
         req.params.postId,

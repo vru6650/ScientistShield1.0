@@ -16,9 +16,10 @@ ScientistShieldOne is a MERN-stack application for sharing knowledge and practic
 - [Node.js](https://nodejs.org/) and npm
 - [MongoDB](https://www.mongodb.com/)
 - Environment variables (in a `.env` file at the project root or your shell):
-  - `JWT_SECRET` – secret used to sign JSON Web Tokens.
-  - `MONGO_URI` *(optional)* – MongoDB connection string (defaults to `mongodb://0.0.0.0:27017/myappp`).
-  - `PORT` *(optional)* – port for the Express server (defaults to `3000`).
+    - `JWT_SECRET` – secret used to sign JSON Web Tokens.
+    - `MONGO_URI` *(optional)* – MongoDB connection string (defaults to `mongodb://0.0.0.0:27017/myappp`).
+    - `PORT` *(optional)* – port for the Express server (defaults to `3000`).
+    - `CORS_ORIGIN` *(optional)* – allowed origin for CORS (defaults to `http://localhost:5173`).
 
 ## Installation & Usage
 1. Clone the repository and navigate into it.
@@ -32,8 +33,8 @@ ScientistShieldOne is a MERN-stack application for sharing knowledge and practic
    ```
 4. Set the required environment variables.
 5. Start the development servers:
-   - Backend: `npm run dev`
-   - Frontend: `npm run dev --prefix client`
+    - Backend: `npm run dev`
+    - Frontend: `npm run dev --prefix client`
 6. For production build:
    ```bash
    npm run build
@@ -44,6 +45,3 @@ ScientistShieldOne is a MERN-stack application for sharing knowledge and practic
 1. Fork the repository and create a new branch for your feature or fix.
 2. Make your changes and run any available tests (`npm test`).
 3. Commit your changes with a clear message and open a pull request.
-4. Ensure your code follows the existing style and includes appropriate documentation.
-
-
