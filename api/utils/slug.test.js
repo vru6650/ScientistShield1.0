@@ -9,5 +9,10 @@ test('generateSlug converts title to URL-friendly slug', () => {
 
 test('generateSlug removes non-alphanumeric characters', () => {
     const slug = generateSlug('React & Node.js Basics');
-    assert.strictEqual(slug, 'react--nodejs-basics');
+    assert.strictEqual(slug, 'react-nodejs-basics');
+});
+
+test('generateSlug collapses whitespace and trims hyphens', () => {
+    const slug = generateSlug('  Multiple   Spaces -- and symbols!!!  ');
+    assert.strictEqual(slug, 'multiple-spaces-and-symbols');
 });
