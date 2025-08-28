@@ -9,8 +9,8 @@ import commentRoutes from './routes/comment.route.js';
 import tutorialRoutes from './routes/tutorial.route.js';
 import quizRoutes from './routes/quiz.route.js';
 import codeSnippetRoutes from './routes/codeSnippet.route.js';
-import cppRoutes from './routes/cpp.route.js'; // NEW: Import the C++ route
-import pythonRoutes from './routes/python.route.js'; // NEW: Import the Python route
+import cppRoutes from './routes/cpp.route.js';
+import pythonRoutes from './routes/python.route.js';
 
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -18,13 +18,17 @@ import cors from 'cors';
 
 dotenv.config();
 
-const mongoUri = process.env.MONGO_URI || 'mongodb://0.0.0.0:27017/myappp';
-if (!process.env.MONGO_URI) {
-    console.log('MONGO_URI not set, using default mongodb://0.0.0.0:27017/myappp');
+// Ensure required environment variables are present
+const requiredEnv = ['MONGO_URI', 'CORS_ORIGIN', 'PORT', 'JWT_SECRET'];
+for (const name of requiredEnv) {
+    if (!process.env[name]) {
+        console.error(`${name} is not set. Exiting.`);
+        process.exit(1);
+    }
 }
 
 mongoose
-    .connect(mongoUri)
+    .connect(process.env.MONGO_URI)
     .then(() => {
         console.log('db');
     })
@@ -36,26 +40,16 @@ const __dirname = path.resolve();
 
 const app = express();
 
-const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
-if (!process.env.CORS_ORIGIN) {
-    console.log('CORS_ORIGIN not set, using default http://localhost:5173');
-}
-
 app.use(cors({
-    origin: corsOrigin,
+    origin: process.env.CORS_ORIGIN,
     credentials: true,
 }));
 
 app.use(express.json());
 app.use(cookieParser());
 
-const port = process.env.PORT || 3000;
-if (!process.env.PORT) {
-    console.log('PORT not set, using default 3000');
-}
-
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}!`);
+app.listen(process.env.PORT, () => {
+    console.log(`Server is running on port ${process.env.PORT}!`);
 });
 
 app.use('/api/user', userRoutes);

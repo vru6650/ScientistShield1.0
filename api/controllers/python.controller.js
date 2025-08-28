@@ -1,5 +1,5 @@
 // api/controllers/python.controller.js
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
@@ -10,19 +10,16 @@ import { errorHandler } from '../utils/error.js';
 const __dirname = path.resolve();
 const TEMP_DIR = path.join(__dirname, 'temp');
 
-// Ensure the temporary directory exists asynchronously
-await fs.promises.mkdir(TEMP_DIR, { recursive: true });
-
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // Function to check for available python executable
 const getPythonCommand = async () => {
     try {
-        await execAsync('python3 --version');
+        await execFileAsync('python3', ['--version']);
         return 'python3';
     } catch {
         try {
-            await execAsync('python --version');
+            await execFileAsync('python', ['--version']);
             return 'python';
         } catch {
             return null;
@@ -36,6 +33,8 @@ export const runPythonCode = async (req, res, next) => {
         return next(errorHandler(400, 'Python code is required.'));
     }
 
+    await fs.promises.mkdir(TEMP_DIR, { recursive: true });
+
     const pythonCommand = await getPythonCommand();
     if (!pythonCommand) {
         return next(errorHandler(500, 'Python executable not found on the server.'));
@@ -48,8 +47,10 @@ export const runPythonCode = async (req, res, next) => {
         // 1. Write the code to a temporary Python file
         await fs.promises.writeFile(filePath, code);
 
-        // 2. Execute the Python script using a child process
-        const { stdout } = await execAsync(`${pythonCommand} "${filePath}"`, { timeout: 5000 });
+        // 2. Execute the Python script using a child process without shell
+        const { stdout } = await execFileAsync(pythonCommand, [filePath], {
+            timeout: 5000,
+        });
 
         // 3. Send the output back to the client
         res.status(200).json({ output: stdout, error: false });

@@ -27,4 +27,5 @@ test('generateSlug throws an error when input is not a string', () => {
         name: 'TypeError',
         message: 'Title must be a string',
     });
+
 });
