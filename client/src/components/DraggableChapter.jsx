@@ -72,10 +72,14 @@ const DraggableChapter = ({
 
     const renderContentTypeIcon = (type) => {
         switch (type) {
-            case 'text': return <FaBook className="text-teal-500" />;
-            case 'code-interactive': return <FaCode className="text-blue-500" />;
-            case 'quiz': return <FaList className="text-purple-500" />;
-            default: return null;
+            case 'text':
+                return <FaBook className="text-teal-500 dark:text-teal-400" />;
+            case 'code-interactive':
+                return <FaCode className="text-blue-500 dark:text-blue-400" />;
+            case 'quiz':
+                return <FaList className="text-purple-500 dark:text-purple-400" />;
+            default:
+                return null;
         }
     };
 
@@ -99,7 +103,7 @@ const DraggableChapter = ({
                             <div className='flex items-center gap-2'>
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Initial Code</p>
                                 <Tooltip content="This code will be displayed in the interactive editor for the user to start with.">
-                                    <FaQuestionCircle className="text-gray-400 cursor-help" />
+                                    <FaQuestionCircle className="text-gray-400 dark:text-gray-500 cursor-help" />
                                 </Tooltip>
                             </div>
                             <Textarea
@@ -113,7 +117,7 @@ const DraggableChapter = ({
                             <div className='flex items-center gap-2'>
                                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Expected Output</p>
                                 <Tooltip content="The expected output of the code. This will be used to validate the user's solution. Leave blank if not needed.">
-                                    <FaQuestionCircle className="text-gray-400 cursor-help" />
+                                    <FaQuestionCircle className="text-gray-400 dark:text-gray-500 cursor-help" />
                                 </Tooltip>
                             </div>
                             <TextInput

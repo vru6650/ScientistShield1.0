@@ -53,14 +53,14 @@ export default function Hero() {
                     <TextInput
                         type="text"
                         placeholder="Search for tutorials..."
-                        className="flex-grow rounded-l-radius-full [&>div>input]:!rounded-none [&>div>input]:!border-0 [&>div>input]:!ring-0 [&>div>input]:!shadow-none [&>div>input]:bg-white/90 [&>div>input]:placeholder-gray-500 [&>div>input]:text-gray-900 focus:!ring-0"
+                        className="flex-grow rounded-l-radius-full [&>div>input]:!rounded-none [&>div>input]:!border-0 [&>div>input]:!ring-0 [&>div>input]:!shadow-none [&>div>input]:bg-white/90 dark:[&>div>input]:bg-gray-800/90 [&>div>input]:placeholder-gray-500 dark:[&>div>input]:placeholder-gray-400 [&>div>input]:text-gray-900 dark:[&>div>input]:text-gray-100 focus:!ring-0"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         icon={HiMagnifyingGlass}
                     />
                     <Button
                         type="submit"
-                        className="bg-sky-500 hover:bg-sky-600 text-white !rounded-none rounded-r-radius-full h-11 w-20 transition-colors duration-300 transform hover:scale-105"
+                        className="bg-sky-500 hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500 text-white !rounded-none rounded-r-radius-full h-11 w-20 transition-colors duration-300 transform hover:scale-105"
                     >
                         Go
                     </Button>
