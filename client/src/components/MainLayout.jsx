@@ -3,6 +3,7 @@ import Header from './Header';
 import Footer from './Footer';
 import ScrollToTop from './ScrollToTop';
 import BottomNav from './BottomNav';
+import Sidebar from './Sidebar';
 
 /**
  * Renders the common layout for the application, including the
@@ -14,9 +15,12 @@ export default function MainLayout() {
         <>
             <ScrollToTop />
             <Header />
-            <main>
-                <Outlet />
-            </main>
+            <div className="flex min-h-screen">
+                <Sidebar />
+                <main className="flex-1">
+                    <Outlet />
+                </main>
+            </div>
             <Footer />
             <BottomNav />
         </>

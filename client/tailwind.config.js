@@ -40,6 +40,10 @@ export default {
         // --- Your custom Matrix green color ---
         'matrix-green': '#00ff41',
         // ------------------------------------
+        sidebar: {
+          light: '#E0EEFF', // professional-blue-100
+          dark: '#143859',  // professional-blue-900
+        },
       },
       fontFamily: {
         heading: ['Poppins', 'sans-serif'],
