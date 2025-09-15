@@ -46,3 +46,4 @@ ScientistShieldOne is a MERN-stack application for sharing knowledge and practic
 2. Make your changes and run any available tests (`npm test`).
 3. Commit your changes with a clear message and open a pull request.# ScientistShield_0.1
 # ScientistShield0.2
+# ScientistShield1.0
