@@ -36,6 +36,7 @@ function Magnetic({ children }) {
 function CommandMenu({ isOpen, onClose }) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const modalRef = useRef(null);
   const quickLinks = [
     { label: 'Profile', path: '/dashboard?tab=profile' },
     { label: 'Create a Post', path: '/create-post' },
@@ -53,11 +54,40 @@ function CommandMenu({ isOpen, onClose }) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen && modalRef.current) {
+      const focusableSelectors =
+          'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
+      const focusableElements = modalRef.current.querySelectorAll(focusableSelectors);
+      const firstEl = focusableElements[0];
+      const lastEl = focusableElements[focusableElements.length - 1];
+
+      const handleTrap = (e) => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstEl) {
+            e.preventDefault();
+            lastEl.focus();
+          } else if (!e.shiftKey && document.activeElement === lastEl) {
+            e.preventDefault();
+            firstEl.focus();
+          }
+        }
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+
+      firstEl && firstEl.focus();
+      modalRef.current.addEventListener('keydown', handleTrap);
+      return () => modalRef.current?.removeEventListener('keydown', handleTrap);
+    }
+  }, [isOpen, onClose]);
   return (
       <AnimatePresence>
         {isOpen && (
-            <Modal show={isOpen} onClose={onClose} popup size="lg">
-              <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}>
+            <Modal show={isOpen} onClose={onClose} popup size="lg" id="command-menu" role="menu">
+              <motion.div ref={modalRef} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}>
                 <Modal.Header />
                 <Modal.Body>
                   <form onSubmit={handleSubmit}>
@@ -122,6 +152,9 @@ export default function Header() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsCommandMenuOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setIsDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -220,7 +253,20 @@ export default function Header() {
               <div className='flex items-center gap-space-md md:order-2'>
                 <Magnetic>
                   <Tooltip content="Search (⌘+K)">
-                    <Button className='w-12 h-10' color='gray' pill onClick={() => setIsCommandMenuOpen(true)}>
+                    <Button
+                        className='w-12 h-10'
+                        color='gray'
+                        pill
+                        onClick={() => setIsCommandMenuOpen(true)}
+                        aria-controls="command-menu"
+                        aria-expanded={isCommandMenuOpen}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setIsCommandMenuOpen(true);
+                          }
+                        }}
+                    >
                       <AiOutlineSearch />
                     </Button>
                   </Tooltip>
@@ -246,6 +292,18 @@ export default function Header() {
                           color="light-blue"
                           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                           className="cursor-pointer"
+                          tabIndex={0}
+                          aria-controls="user-menu"
+                          aria-expanded={isDropdownOpen}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setIsDropdownOpen((prev) => !prev);
+                            }
+                            if (e.key === 'Escape') {
+                              setIsDropdownOpen(false);
+                            }
+                          }}
                       />
                       <AnimatePresence>
                         {isDropdownOpen && (
@@ -254,6 +312,8 @@ export default function Header() {
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
+                                id="user-menu"
+                                role="menu"
                                 className="absolute right-0 mt-space-sm w-48 rounded-radius-lg shadow-lg dark:bg-gray-700 dark:border-gray-600 bg-white border border-gray-200 z-50 origin-top-right"
                             >
                               <div className="p-space-lg">
