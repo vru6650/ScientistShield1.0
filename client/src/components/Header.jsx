@@ -3,13 +3,12 @@
 import { Avatar, Button, Navbar, TextInput, Tooltip, Modal } from 'flowbite-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AiOutlineSearch } from 'react-icons/ai';
-import { FaMoon, FaSun } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 
-import { toggleTheme } from '../redux/theme/themeSlice';
 import { signoutSuccess } from '../redux/user/userSlice';
+import ThemeToggle from './ThemeToggle';
 
 // --- Magnetic, CommandMenu, and navLinks components have no changes ---
 // (They are included below for completeness)
@@ -273,13 +272,7 @@ export default function Header() {
                 </Magnetic>
                 <Magnetic>
                   <Tooltip content="Toggle Theme">
-                    <Button className='w-12 h-10 hidden sm:inline' color='gray' pill onClick={() => dispatch(toggleTheme())}>
-                      <AnimatePresence mode='wait' initial={false}>
-                        <motion.span key={theme} initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} transition={{ duration: 0.2 }}>
-                          {theme === 'light' ? <FaSun /> : <FaMoon />}
-                        </motion.span>
-                      </AnimatePresence>
-                    </Button>
+                    <ThemeToggle className='hidden sm:inline-flex w-12 h-10' />
                   </Tooltip>
                 </Magnetic>
                 {currentUser ? (

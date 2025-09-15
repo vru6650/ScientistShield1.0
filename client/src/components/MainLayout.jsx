@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import ScrollToTop from './ScrollToTop';
+import BottomNav from './BottomNav';
 
 /**
  * Renders the common layout for the application, including the
@@ -17,6 +18,7 @@ export default function MainLayout() {
                 <Outlet />
             </main>
             <Footer />
+            <BottomNav />
         </>
     );
 }
