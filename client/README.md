@@ -42,3 +42,13 @@ Border radii tokens follow `rounded-{token}`.
 - `rounded-radius-full` – fully rounded elements
 
 Refer to the components for examples of token usage.
+
+## Shared UI Components
+
+Reusable primitives are available in `src/components/ui/`:
+
+- `Button` – standard button with spacing, rounded corners, and variants for primary, secondary, and danger actions.
+- `Card` – base container with consistent border, shadow, and background.
+- `Modal` – overlay modal for confirmations and dialogs.
+
+Use these components to avoid duplicating common styles across the app.
