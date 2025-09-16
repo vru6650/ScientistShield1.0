@@ -1,7 +1,7 @@
-import User from '../models/user.model.js';
 import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
 import jwt from 'jsonwebtoken';
+import { createUser, findUserByEmail } from '../services/auth.service.js';
 
 /**
  * Signs a JWT for the provided payload using the application's secret.
@@ -34,16 +34,13 @@ export const signup = async (req, res, next) => {
     return next(errorHandler(400, 'All fields are required'));
   }
 
-  const hashedPassword = await bcryptjs.hash(password, 10);
-
-  const newUser = new User({
-    username,
-    email,
-    password: hashedPassword,
-  });
-
   try {
-    await newUser.save();
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    await createUser({
+      username,
+      email,
+      password: hashedPassword,
+    });
     res.json('Signup successful');
   } catch (error) {
     next(error);
@@ -58,7 +55,7 @@ export const signin = async (req, res, next) => {
   }
 
   try {
-    const validUser = await User.findOne({ email });
+    const validUser = await findUserByEmail(email);
     if (!validUser) {
       return next(errorHandler(404, 'User not found'));
     }
@@ -84,7 +81,7 @@ export const signin = async (req, res, next) => {
 export const google = async (req, res, next) => {
   const { email, name, googlePhotoUrl } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await findUserByEmail(email);
     if (user) {
       const token = signToken({ id: user._id, isAdmin: user.isAdmin });
       const { password, ...rest } = user._doc;
@@ -100,7 +97,7 @@ export const google = async (req, res, next) => {
         Math.random().toString(36).slice(-8) +
         Math.random().toString(36).slice(-8);
     const hashedPassword = await bcryptjs.hash(generatedPassword, 10);
-    const newUser = new User({
+    const newUser = await createUser({
       username:
           name.toLowerCase().split(' ').join('') +
           Math.random().toString(9).slice(-4),
@@ -108,7 +105,6 @@ export const google = async (req, res, next) => {
       password: hashedPassword,
       profilePicture: googlePhotoUrl,
     });
-    await newUser.save();
     const token = signToken({ id: newUser._id, isAdmin: newUser.isAdmin });
     const { password, ...rest } = newUser._doc;
     res

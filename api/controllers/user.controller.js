@@ -1,6 +1,12 @@
-import bcryptjs from 'bcryptjs';
 import { errorHandler } from '../utils/error.js';
-import User from '../models/user.model.js';
+import {
+  countAllUsers,
+  countUsersCreatedAfter,
+  deleteUserById,
+  findUsersWithPagination,
+  getUserById,
+  updateUserById,
+} from '../services/user.service.js';
 
 export const test = (req, res) => {
   res.json({ message: 'API is working!' });
@@ -13,28 +19,10 @@ export const updateUser = async (req, res, next) => {
   }
 
   try {
-    const userToUpdate = await User.findById(req.params.userId);
-    if (!userToUpdate) {
+    const updatedUser = await updateUserById(req.params.userId, req.body);
+    if (!updatedUser) {
       return next(errorHandler(404, 'User not found'));
     }
-
-    // Update fields if they are provided in the request body
-    if (req.body.username) {
-      userToUpdate.username = req.body.username;
-    }
-    if (req.body.email) {
-      userToUpdate.email = req.body.email;
-    }
-    if (req.body.password) {
-      userToUpdate.password = req.body.password;
-    }
-    if (req.body.profilePicture) {
-      userToUpdate.profilePicture = req.body.profilePicture;
-    }
-
-    // Using user.save() will trigger the Mongoose pre-save middleware
-    // This automatically handles validation and password hashing as defined in the model
-    const updatedUser = await userToUpdate.save();
 
     const { password, ...rest } = updatedUser._doc;
     res.status(200).json(rest);
@@ -50,7 +38,7 @@ export const deleteUser = async (req, res, next) => {
     return next(errorHandler(403, 'You are not allowed to delete this user'));
   }
   try {
-    await User.findByIdAndDelete(req.params.userId);
+    await deleteUserById(req.params.userId);
     res.status(200).json('User has been deleted');
   } catch (error) {
     next(error);
@@ -79,13 +67,9 @@ export const getUsers = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 9;
     const sortDirection = req.query.sort === 'asc' ? 1 : -1;
 
-    const users = await User.find()
-        .sort({ createdAt: sortDirection })
-        .skip(startIndex)
-        .limit(limit)
-        .select('-password'); // Exclude password directly from the query
+    const users = await findUsersWithPagination(startIndex, limit, sortDirection);
 
-    const totalUsers = await User.countDocuments();
+    const totalUsers = await countAllUsers();
 
     const now = new Date();
     const oneMonthAgo = new Date(
@@ -93,9 +77,7 @@ export const getUsers = async (req, res, next) => {
         now.getMonth() - 1,
         now.getDate()
     );
-    const lastMonthUsers = await User.countDocuments({
-      createdAt: { $gte: oneMonthAgo },
-    });
+    const lastMonthUsers = await countUsersCreatedAfter(oneMonthAgo);
 
     res.status(200).json({
       users, // The password is already excluded
@@ -110,7 +92,7 @@ export const getUsers = async (req, res, next) => {
 // --- Upgraded getUser Function ---
 export const getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userId).select('-password');
+    const user = await getUserById(req.params.userId, { excludePassword: true });
     if (!user) {
       return next(errorHandler(404, 'User not found'));
     }
