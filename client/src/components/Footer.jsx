@@ -164,8 +164,6 @@ export default function FooterCom() {
                                         type="submit"
                                         gradientDuoTone="purpleToPink"
                                         className="w-full"
-                                        whileHover={{ scale: 1.02 }} // Subtle button animation
-                                        whileTap={{ scale: 0.98 }}
                                     >
                                         Subscribe
                                     </Button>

@@ -37,9 +37,7 @@ export default {
           800: '#5F5F5F',
           900: '#4A4A4A',
         },
-        // --- Your custom Matrix green color ---
         'matrix-green': '#00ff41',
-        // ------------------------------------
         sidebar: {
           light: '#E0EEFF', // professional-blue-100
           dark: '#143859',  // professional-blue-900
@@ -69,7 +67,6 @@ export default {
       backgroundImage: {
         'professional-gradient': 'linear-gradient(to right, #1a5da2, #3a8adf, #1d72ce)',
       },
-      // --- New animations for staggered effects ---
       keyframes: {
         'card-fade-in': {
           '0%': { opacity: 0, transform: 'translateY(20px)' },
@@ -79,7 +76,6 @@ export default {
       animation: {
         'card-fade-in': 'card-fade-in 0.8s ease-out forwards',
       },
-      // ------------------------------------------
     },
   },
   plugins: [flowbite, tailwindScrollbar],

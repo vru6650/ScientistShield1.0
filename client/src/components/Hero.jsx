@@ -1,5 +1,3 @@
-// client/src/components/Hero.jsx
-
 import { useNavigate } from 'react-router-dom';
 import { Button, TextInput } from 'flowbite-react';
 import { useState } from 'react';

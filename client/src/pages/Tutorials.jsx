@@ -1,4 +1,3 @@
-// client/src/pages/Tutorials.jsx
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';

@@ -8,8 +8,8 @@ const fetchPosts = () => {
     return new Promise(resolve => {
         setTimeout(() => {
             resolve([
-                { slug: 'post-1', title: 'First Amazing Post', ... },
-                { slug: 'post-2', title: 'A Video Post', ... },
+                { slug: 'post-1', title: 'First Amazing Post', content: '...' },
+                { slug: 'post-2', title: 'A Video Post', content: '...' },
             ]);
         }, 2000);
     });

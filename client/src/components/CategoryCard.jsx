@@ -1,5 +1,3 @@
-// client/src/components/CategoryCard.jsx
-
 import { Link } from 'react-router-dom';
 import { Button } from 'flowbite-react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';

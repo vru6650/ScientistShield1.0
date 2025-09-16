@@ -1,5 +1,3 @@
-// client/src/pages/Home.jsx
-
 import { Link } from 'react-router-dom';
 import { Button, Alert } from 'flowbite-react';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
