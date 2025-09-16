@@ -40,6 +40,31 @@ export default {
         // --- Your custom Matrix green color ---
         'matrix-green': '#00ff41',
         // ------------------------------------
+        sidebar: {
+          light: '#E0EEFF', // professional-blue-100
+          dark: '#143859',  // professional-blue-900
+        },
+      },
+      fontFamily: {
+        heading: ['Poppins', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
+      },
+      spacing: {
+        'space-xs': '0.25rem',
+        'space-sm': '0.5rem',
+        'space-md': '0.75rem',
+        'space-lg': '1rem',
+        'space-xl': '1.5rem',
+        'space-2xl': '2rem',
+        'space-3xl': '3rem',
+        'space-4xl': '4rem',
+        'space-5xl': '6rem',
+      },
+      borderRadius: {
+        'radius-sm': '0.125rem',
+        'radius-md': '0.375rem',
+        'radius-lg': '0.5rem',
+        'radius-full': '9999px',
       },
       backgroundImage: {
         'professional-gradient': 'linear-gradient(to right, #1a5da2, #3a8adf, #1d72ce)',

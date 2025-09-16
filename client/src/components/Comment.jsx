@@ -72,7 +72,7 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
         >
           <div className='flex-shrink-0 mr-3'>
             <img
-                className='w-10 h-10 rounded-full bg-gray-200 object-cover'
+                className='w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 object-cover'
                 src={user?.profilePicture}
                 alt={user?.username}
             />
@@ -82,7 +82,7 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
             <span className='font-bold mr-1 text-xs truncate'>
               {user ? `@${user.username}` : 'anonymous user'}
             </span>
-              <span className='text-gray-500 text-xs'>
+              <span className='text-gray-500 dark:text-gray-400 text-xs'>
               {moment(comment.createdAt).fromNow()}
             </span>
             </div>
@@ -116,19 +116,19 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
                 </>
             ) : (
                 <>
-                  <p className='text-gray-500 pb-2 break-words'>{comment.content}</p>
+                  <p className='text-gray-500 dark:text-gray-300 pb-2 break-words'>{comment.content}</p>
                   <div className='flex items-center pt-2 text-xs border-t dark:border-gray-700 max-w-fit gap-4'>
                     <button
                         type='button'
                         onClick={() => onLike(comment._id)}
-                        className={`text-gray-500 hover:text-blue-500 flex items-center gap-1 ${
+                        className={`text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 flex items-center gap-1 ${
                             currentUser &&
                             comment.likes.includes(currentUser._id) &&
-                            'text-blue-500'
+                            'text-blue-500 dark:text-blue-400'
                         }`}
                     >
                       <FaThumbsUp className='text-sm' />
-                      <span className='text-gray-400'>
+                      <span className='text-gray-400 dark:text-gray-500'>
                     {comment.numberOfLikes > 0 &&
                         comment.numberOfLikes}
                   </span>
@@ -140,14 +140,14 @@ export default function Comment({ comment, onLike, onEdit, onDelete }) {
                               <button
                                   type='button'
                                   onClick={handleEdit}
-                                  className='text-gray-500 hover:text-blue-500'
+                                  className='text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'
                               >
                                 <FaEdit />
                               </button>
                               <button
                                   type='button'
                                   onClick={() => setShowDeleteModal(true)}
-                                  className='text-gray-500 hover:text-red-500'
+                                  className='text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400'
                               >
                                 <FaTrashAlt />
                               </button>

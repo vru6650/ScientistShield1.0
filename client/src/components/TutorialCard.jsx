@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useState, useRef } from 'react';
+import Card from './ui/Card';
 
 const TutorialCard = ({ tutorial }) => {
     // Define animation variants for the card's entrance
@@ -43,9 +44,10 @@ const TutorialCard = ({ tutorial }) => {
 
     return (
         <Link to={`/tutorials/${tutorial.slug}`} className="block h-full">
-            <motion.div
+            <Card
+                as={motion.div}
                 ref={cardRef}
-                className="relative border border-gray-700 rounded-lg shadow-md overflow-hidden h-full flex flex-col bg-gray-800"
+                className="relative overflow-hidden h-full flex flex-col"
                 variants={cardVariants}
                 initial="hidden"
                 whileInView="visible"
@@ -85,7 +87,7 @@ const TutorialCard = ({ tutorial }) => {
                         </span>
                     </div>
                 </div>
-            </motion.div>
+            </Card>
         </Link>
     );
 };

@@ -59,7 +59,7 @@ export default function InteractiveCodeBlock({ initialCode, language }) {
         >
             <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-xl font-bold flex items-center gap-3 text-gray-800 dark:text-gray-100">
-                    <FaCode className="text-purple-600 drop-shadow-md" /> Interactive Code
+                    <FaCode className="text-purple-600 dark:text-purple-400 drop-shadow-md" /> Interactive Code
                 </h3>
                 <motion.div {...motionWrapperProps}>
                     <Button
@@ -106,7 +106,7 @@ export default function InteractiveCodeBlock({ initialCode, language }) {
                         className="pt-6"
                     >
                         <div className="w-full relative group">
-                            <pre className={`p-5 rounded-lg bg-gray-900 text-white language-${language} overflow-x-auto text-sm shadow-inner`}>
+                            <pre className={`p-5 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white language-${language} overflow-x-auto text-sm shadow-inner`}>
                                 <code dangerouslySetInnerHTML={{ __html: initialCode }} />
                             </pre>
                             <motion.div
