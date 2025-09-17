@@ -46,7 +46,6 @@ const tutorialChapterSchema = new mongoose.Schema(
         chapterSlug: {
             type: String,
             required: true,
-            unique: true,
         },
         contentType: {
             type: String,
@@ -127,5 +126,28 @@ const tutorialSchema = new mongoose.Schema(
 );
 
 const Tutorial = mongoose.model('Tutorial', tutorialSchema);
+
+const dropLegacyChapterSlugIndex = async () => {
+    try {
+        if (!Tutorial.collection) {
+            return;
+        }
+
+        await Tutorial.collection.dropIndex('chapters.chapterSlug_1');
+    } catch (error) {
+        const isIndexNotFound = error?.codeName === 'IndexNotFound' || error?.code === 27;
+        const isNamespaceNotFound = error?.codeName === 'NamespaceNotFound' || error?.code === 26;
+
+        if (!isIndexNotFound && !isNamespaceNotFound) {
+            console.warn('Failed to drop legacy chapters.chapterSlug_1 index:', error);
+        }
+    }
+};
+
+if (mongoose.connection.readyState === 1) {
+    dropLegacyChapterSlugIndex();
+} else {
+    mongoose.connection.once('connected', dropLegacyChapterSlugIndex);
+}
 
 export default Tutorial;
