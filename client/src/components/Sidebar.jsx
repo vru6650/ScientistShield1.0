@@ -246,7 +246,7 @@ const Sidebar = ({ isCollapsed, isPinned, setIsPinned }) => {
         <motion.aside
             animate={{ width: isCollapsed ? '5rem' : '16rem' }}
             transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
-            className="sidebar hidden md:flex flex-col fixed top-0 left-0 z-40 h-[calc(100vh-2rem)] my-4 ml-4 rounded-2xl border"
+            className="sidebar hidden md:flex flex-col fixed top-0 left-0 z-40 h-[calc(100vh-2rem)] my-4 ml-4 rounded-2xl border backdrop-blur-lg bg-white/60 dark:bg-slate-900/60 shadow-lg"
             onMouseMove={handleMouseMove}
         >
             <motion.div

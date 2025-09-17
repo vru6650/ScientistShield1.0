@@ -42,8 +42,8 @@ html {
   --color-border: #e5e7eb;
 
   /* NEW: Sidebar-specific variables for light mode */
-  --color-sidebar-bg: linear-gradient(180deg, #fdfdff 0%, #f8fafc 100%);
-  --color-sidebar-border: #e2e8f0;
+  --color-sidebar-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(241, 245, 249, 0.55) 100%);
+  --color-sidebar-border: rgba(226, 232, 240, 0.6);
 
 
 
@@ -76,8 +76,8 @@ html {
   --color-border: #4b5563;
 
   /* NEW: Sidebar-specific variables for dark mode */
-  --color-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  --color-sidebar-border: #334155;
+  --color-sidebar-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.7) 100%);
+  --color-sidebar-border: rgba(51, 65, 85, 0.65);
 
 
 }
@@ -92,13 +92,19 @@ html {
  * Ensures the sidebar adheres to brand colors and dark mode.
  */
 .sidebar {
-  background: var(--color-sidebar-bg);
+  background-image: var(--color-sidebar-bg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
   color: var(--color-text-primary);
   border-color: var(--color-sidebar-border);
 }
 
 .dark .sidebar {
-  background: var(--color-sidebar-bg);
+  background-image: var(--color-sidebar-bg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
   color: var(--color-text-primary);
   border-color: var(--color-sidebar-border);
 }
