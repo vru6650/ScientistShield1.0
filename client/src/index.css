@@ -40,6 +40,10 @@ html {
   --color-text-secondary: #5F5F5F; /* Muted gray from subtle-gray-800 */
   --color-accent: #3A8ADF; /* A professional blue from professional-blue-500 */
   --color-border: #e5e7eb;
+
+  /* NEW: Sidebar-specific variables for light mode */
+  --color-sidebar-bg: linear-gradient(180deg, #fdfdff 0%, #f8fafc 100%);
+  --color-sidebar-border: #e2e8f0;
 }
 
 /*
@@ -67,6 +71,10 @@ html {
   --color-text-secondary: #B8D4F7; /* Muted light blue from professional-blue-200 */
   --color-accent: #64A2E7; /* A lighter professional blue from professional-blue-400 */
   --color-border: #4b5563;
+
+  /* NEW: Sidebar-specific variables for dark mode */
+  --color-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  --color-sidebar-border: #334155;
 }
 
 .dark body {
@@ -79,11 +87,15 @@ html {
  * Ensures the sidebar adheres to brand colors and dark mode.
  */
 .sidebar {
-  @apply bg-sidebar-light text-professional-blue-900;
+  background: var(--color-sidebar-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-sidebar-border);
 }
 
 .dark .sidebar {
-  @apply bg-sidebar-dark text-professional-blue-100;
+  background: var(--color-sidebar-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-sidebar-border);
 }
 
 
