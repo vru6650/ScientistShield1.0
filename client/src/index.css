@@ -66,8 +66,8 @@ html {
 /*
  * --- Dark Theme Overrides ---
  * Redefines the color variables for a professional dark theme.
- */
-.dark :root {
+*/
+:root.dark {
   --color-bg-primary: #143859; /* Dark blue from professional-blue-900 */
   --color-bg-secondary: #174878; /* Deeper blue from professional-blue-800 */
   --color-text-primary: #e0eeff; /* Light blue from professional-blue-100 */
