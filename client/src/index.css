@@ -44,6 +44,9 @@ html {
   /* NEW: Sidebar-specific variables for light mode */
   --color-sidebar-bg: linear-gradient(180deg, #fdfdff 0%, #f8fafc 100%);
   --color-sidebar-border: #e2e8f0;
+
+
+
 }
 
 /*
@@ -75,6 +78,8 @@ html {
   /* NEW: Sidebar-specific variables for dark mode */
   --color-sidebar-bg: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   --color-sidebar-border: #334155;
+
+
 }
 
 .dark body {
@@ -396,4 +401,20 @@ html {
 .animate-fade-in-down {
   animation: fade-in-down 0.8s ease-out forwards;
   opacity: 0;
+}
+
+/*
+ * --- Sidebar Styles ---
+ * Ensures the sidebar adheres to brand colors and dark mode.
+ */
+.sidebar {
+  background: var(--color-sidebar-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-sidebar-border);
+}
+
+.dark .sidebar {
+  background: var(--color-sidebar-bg);
+  color: var(--color-text-primary);
+  border-color: var(--color-sidebar-border);
 }

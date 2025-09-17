@@ -42,6 +42,7 @@ export default {
           light: '#E0EEFF', // professional-blue-100
           dark: '#143859',  // professional-blue-900
         },
+
       },
       fontFamily: {
         heading: ['Poppins', 'sans-serif'],
