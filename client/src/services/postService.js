@@ -1,3 +1,4 @@
+// client/src/services/postService.js
 /**
  * A service file for post-related API calls.
  */

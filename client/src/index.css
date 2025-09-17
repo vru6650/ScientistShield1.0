@@ -1,3 +1,4 @@
+/* client/src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -48,6 +49,11 @@ html {
 .light body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
+}
+
+.dark-theme {
+  background: linear-gradient(to right, #000000, #434343);
+  color: #ffffff;
 }
 
 /*
@@ -110,9 +116,9 @@ html {
 
 /* --- Glassmorphism Effect --- */
 .glass-effect {
-  background-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dark .glass-effect {
@@ -378,18 +384,4 @@ html {
 .animate-fade-in-down {
   animation: fade-in-down 0.8s ease-out forwards;
   opacity: 0;
-}
-
-/* client/src/index.css */
-.dark-theme {
-  background: linear-gradient(to right, #000000, #434343);
-  color: #ffffff;
-}
-
-
-/* client/src/index.css */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
 }
