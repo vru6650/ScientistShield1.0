@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button, ToggleSwitch, Spinner, Alert } from 'flowbite-react';
 import { useSelector } from 'react-redux';
-import { FaPlay, FaRedo, FaChevronRight, FaChevronDown, FaTerminal, FaSave } from 'react-icons/fa';
+import { FaPlay, FaRedo, FaChevronRight, FaChevronDown, FaTerminal, FaEye } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 import LanguageSelector from './LanguageSelector';
 
@@ -19,6 +20,7 @@ const defaultCodes = {
 export default function CodeEditor({ initialCode = {}, language = 'html' }) {
     const { theme } = useSelector((state) => state.theme);
     const outputRef = useRef(null);
+    const navigate = useNavigate();
 
     // Consolidated state for all code snippets
     const [codes, setCodes] = useState({
@@ -193,6 +195,25 @@ export default function CodeEditor({ initialCode = {}, language = 'html' }) {
                             <FaRedo className="mr-2 h-4 w-4" /> Reset
                         </Button>
                     </motion.div>
+                    {(selectedLanguage === 'python' || selectedLanguage === 'javascript') && (
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                        >
+                            <Button
+                                outline
+                                gradientDuoTone="purpleToBlue"
+                                onClick={() => navigate('/visualizer', {
+                                    state: {
+                                        code: codes[selectedLanguage],
+                                        language: selectedLanguage,
+                                    }
+                                })}
+                            >
+                                <FaEye className="mr-2 h-4 w-4" /> Visualize
+                            </Button>
+                        </motion.div>
+                    )}
                 </div>
             </div>
             <div className="flex-1 flex flex-col md:flex-row gap-4 overflow-hidden">

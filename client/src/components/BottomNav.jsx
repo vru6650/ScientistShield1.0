@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FaBook, FaHome, FaQuestionCircle, FaUser } from 'react-icons/fa';
+import { FaBook, FaHome, FaQuestionCircle, FaUser, FaLaptopCode } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
 import ThemeToggle from './ThemeToggle.jsx';
@@ -8,7 +8,8 @@ import ThemeToggle from './ThemeToggle.jsx';
 const items = [
     { to: '/', label: 'Home', icon: FaHome },
     { to: '/tutorials', label: 'Tutorials', icon: FaBook },
-    { to: '/quizzes', label: 'Quizzes', icon: FaQuestionCircle }
+    { to: '/quizzes', label: 'Quizzes', icon: FaQuestionCircle },
+    { to: '/visualizer', label: 'Visualizer', icon: FaLaptopCode }
 ];
 
 export default function BottomNav() {
