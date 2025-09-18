@@ -11,6 +11,7 @@ import {
     Tooltip,
 } from 'flowbite-react';
 import {
+    FaArrowRight,
     FaBug,
     FaChartBar,
     FaCode,
@@ -69,6 +70,8 @@ export default function CodeVisualizer() {
     const previousEvent = hasEvents && currentIndex > 0 ? events[currentIndex - 1] : null;
     const codeLines = useMemo(() => code.replace(/\r\n/g, '\n').split('\n'), [code]);
     const currentLine = currentEvent?.line ?? null;
+    const nextEvent = hasEvents && currentIndex < events.length - 1 ? events[currentIndex + 1] : null;
+    const nextLine = nextEvent?.line ?? null;
     const timelineProgress = hasEvents ? Math.round((currentIndex / Math.max(events.length - 1, 1)) * 100) : 0;
 
     const insights = useMemo(() => {
@@ -238,6 +241,10 @@ export default function CodeVisualizer() {
                 <Alert color="info" icon={FaInfoCircle} className="max-w-3xl mx-auto">
                     Paste Python 3 code, press <strong>Visualize</strong>, and then walk through the execution timeline using
                     the playback controls. Each step includes the active line, variable snapshots, and the call stack.
+                    <span className="block mt-2 text-sm">
+                        Follow the <span className="font-semibold text-green-500">green arrow</span> for the line currently
+                        executing and the <span className="font-semibold text-red-500">red arrow</span> for what runs next.
+                    </span>
                 </Alert>
 
                 <Card className="space-y-6 bg-white/90 dark:bg-gray-800/80 backdrop-blur">
@@ -434,16 +441,42 @@ export default function CodeVisualizer() {
                         )}
 
                         <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            {hasEvents && (
+                                <div className="flex items-center justify-end gap-4 bg-gray-100 dark:bg-gray-900 text-[0.7rem] uppercase tracking-wide text-gray-500 dark:text-gray-400 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                                    <span className="flex items-center gap-1">
+                                        <FaArrowRight className="text-green-400" aria-hidden="true" />
+                                        Current line
+                                    </span>
+                                    {nextLine && (
+                                        <span className="flex items-center gap-1">
+                                            <FaArrowRight className="text-red-400" aria-hidden="true" />
+                                            Next line
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                             <pre className="bg-gray-900 text-gray-100 text-sm font-mono p-4 overflow-auto max-h-[420px]">
                                 {codeLines.map((line, index) => {
                                     const isActive = currentLine === index + 1;
+                                    const isNext = !isActive && nextLine === index + 1;
                                     return (
                                         <div
                                             key={index}
-                                            className={`flex items-start gap-4 py-1 px-2 rounded ${
-                                                isActive ? 'bg-purple-500/30 text-white' : 'text-gray-300'
+                                            className={`flex items-start gap-3 py-1 px-2 rounded transition-colors ${
+                                                isActive
+                                                    ? 'bg-purple-500/30 text-white'
+                                                    : isNext
+                                                    ? 'bg-red-500/10 text-gray-200'
+                                                    : 'text-gray-300'
                                             }`}
                                         >
+                                            <span className="w-6 flex justify-center pt-1">
+                                                {isActive ? (
+                                                    <FaArrowRight className="text-green-400" aria-label="Current executing line" />
+                                                ) : isNext ? (
+                                                    <FaArrowRight className="text-red-400" aria-label="Next line in trace" />
+                                                ) : null}
+                                            </span>
                                             <span className="w-10 text-right text-xs text-gray-500 dark:text-gray-500">
                                                 {index + 1}
                                             </span>
