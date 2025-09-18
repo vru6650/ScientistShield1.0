@@ -12,10 +12,14 @@ import {
 } from 'flowbite-react';
 import {
     FaBug,
+    FaChartBar,
     FaCode,
+    FaExchangeAlt,
     FaInfoCircle,
+    FaMinusCircle,
     FaPause,
     FaPlay,
+    FaPlusCircle,
     FaRedo,
     FaStepBackward,
     FaStepForward,
@@ -62,8 +66,65 @@ export default function CodeVisualizer() {
     const events = trace?.events ?? [];
     const hasEvents = events.length > 0;
     const currentEvent = hasEvents ? events[Math.min(currentIndex, events.length - 1)] : null;
+    const previousEvent = hasEvents && currentIndex > 0 ? events[currentIndex - 1] : null;
     const codeLines = useMemo(() => code.replace(/\r\n/g, '\n').split('\n'), [code]);
     const currentLine = currentEvent?.line ?? null;
+    const timelineProgress = hasEvents ? Math.round((currentIndex / Math.max(events.length - 1, 1)) * 100) : 0;
+
+    const insights = useMemo(() => {
+        const counts = { call: 0, line: 0, return: 0, exception: 0 };
+        const functions = new Set();
+        let maxStackDepth = 0;
+
+        events.forEach((event) => {
+            if (typeof counts[event.event] === 'number') {
+                counts[event.event] += 1;
+            }
+            if (event?.function) {
+                functions.add(event.function);
+            }
+            const depth = Array.isArray(event?.stack) ? event.stack.length : 0;
+            if (depth > maxStackDepth) {
+                maxStackDepth = depth;
+            }
+        });
+
+        return {
+            totalEvents: events.length,
+            counts,
+            uniqueFunctionCount: functions.size,
+            maxStackDepth,
+        };
+    }, [events]);
+
+    const variableDiff = useMemo(() => {
+        if (!currentEvent) {
+            return { added: [], updated: [], removed: [] };
+        }
+
+        const previousLocals = previousEvent?.locals ?? {};
+        const currentLocals = currentEvent.locals ?? {};
+
+        const added = [];
+        const updated = [];
+        const removed = [];
+
+        Object.entries(currentLocals).forEach(([key, value]) => {
+            if (!(key in previousLocals)) {
+                added.push({ key, value });
+            } else if (previousLocals[key] !== value) {
+                updated.push({ key, previous: previousLocals[key], current: value });
+            }
+        });
+
+        Object.entries(previousLocals).forEach(([key, value]) => {
+            if (!(key in currentLocals)) {
+                removed.push({ key, previous: value });
+            }
+        });
+
+        return { added, updated, removed };
+    }, [currentEvent, previousEvent]);
 
     useEffect(() => {
         if (!isPlaying) return undefined;
@@ -279,7 +340,7 @@ export default function CodeVisualizer() {
                                 </h2>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
                                     {hasEvents
-                                        ? `Step ${currentIndex + 1} of ${events.length}`
+                                        ? `Step ${currentIndex + 1} of ${events.length} (${timelineProgress}% complete)`
                                         : 'Run the visualizer to generate an execution trace.'}
                                 </p>
                             </div>
@@ -306,6 +367,71 @@ export default function CodeVisualizer() {
                                 </Button>
                             </div>
                         </div>
+
+                        {hasEvents && (
+                            <div className="space-y-6">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                                        <FaChartBar />
+                                        <span>Execution insights</span>
+                                    </div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+                                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/70 dark:bg-gray-900/40">
+                                            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Total steps</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{insights.totalEvents}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-purple-200 dark:border-purple-700 p-3 bg-purple-500/10">
+                                            <p className="text-xs uppercase tracking-wide text-purple-500">Call events</p>
+                                            <p className="text-lg font-semibold text-purple-600 dark:text-purple-300">{insights.counts.call}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-blue-200 dark:border-blue-700 p-3 bg-blue-500/10">
+                                            <p className="text-xs uppercase tracking-wide text-blue-500">Line events</p>
+                                            <p className="text-lg font-semibold text-blue-600 dark:text-blue-300">{insights.counts.line}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-emerald-200 dark:border-emerald-700 p-3 bg-emerald-500/10">
+                                            <p className="text-xs uppercase tracking-wide text-emerald-500">Returns</p>
+                                            <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300">{insights.counts.return}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-rose-200 dark:border-rose-700 p-3 bg-rose-500/10">
+                                            <p className="text-xs uppercase tracking-wide text-rose-500">Exceptions</p>
+                                            <p className="text-lg font-semibold text-rose-600 dark:text-rose-300">{insights.counts.exception}</p>
+                                        </div>
+                                        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 bg-white/70 dark:bg-gray-900/40">
+                                            <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Unique functions</p>
+                                            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{insights.uniqueFunctionCount}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Scrub the timeline</label>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={Math.max(events.length - 1, 0)}
+                                        value={currentIndex}
+                                        onChange={(event) => goToStep(Number(event.target.value))}
+                                        className="w-full accent-purple-500"
+                                    />
+                                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <span>Start</span>
+                                        <span>
+                                            Step {currentIndex + 1} · {formatStepLabel(currentEvent)} · line {currentEvent?.line ?? '—'}
+                                        </span>
+                                        <span>End</span>
+                                    </div>
+                                    <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500"
+                                            style={{ width: `${timelineProgress}%` }}
+                                        />
+                                    </div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400 text-right">
+                                        Max stack depth observed: <span className="font-semibold text-indigo-500 dark:text-indigo-300">{insights.maxStackDepth}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                             <pre className="bg-gray-900 text-gray-100 text-sm font-mono p-4 overflow-auto max-h-[420px]">
@@ -409,6 +535,75 @@ export default function CodeVisualizer() {
                                             {descriptiveLabels[currentEvent.event]}
                                         </div>
                                     </dl>
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+                                    <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Variable changes</h3>
+                                    {previousEvent ? (
+                                        variableDiff.added.length === 0 &&
+                                        variableDiff.updated.length === 0 &&
+                                        variableDiff.removed.length === 0 ? (
+                                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">No variable changes since the previous step.</p>
+                                        ) : (
+                                            <div className="mt-3 space-y-3 text-sm font-mono text-gray-700 dark:text-gray-200">
+                                                {variableDiff.added.length > 0 && (
+                                                    <div>
+                                                        <p className="flex items-center gap-2 text-green-500">
+                                                            <FaPlusCircle /> Added
+                                                        </p>
+                                                        <ul className="mt-1 space-y-1">
+                                                            {variableDiff.added.map(({ key, value }) => (
+                                                                <li key={`added-${key}`} className="flex justify-between gap-3">
+                                                                    <span>{key}</span>
+                                                                    <span className="text-right break-all">{value}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {variableDiff.updated.length > 0 && (
+                                                    <div>
+                                                        <p className="flex items-center gap-2 text-amber-500">
+                                                            <FaExchangeAlt /> Updated
+                                                        </p>
+                                                        <ul className="mt-1 space-y-1">
+                                                            {variableDiff.updated.map(({ key, previous, current }) => (
+                                                                <li key={`updated-${key}`} className="flex flex-col gap-1">
+                                                                    <div className="flex justify-between gap-3">
+                                                                        <span>{key}</span>
+                                                                        <span className="text-right break-all">{current}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                                                        <span>Previous</span>
+                                                                        <span className="text-right break-all">{previous}</span>
+                                                                    </div>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                                {variableDiff.removed.length > 0 && (
+                                                    <div>
+                                                        <p className="flex items-center gap-2 text-rose-500">
+                                                            <FaMinusCircle /> Removed
+                                                        </p>
+                                                        <ul className="mt-1 space-y-1">
+                                                            {variableDiff.removed.map(({ key, previous }) => (
+                                                                <li key={`removed-${key}`} className="flex justify-between gap-3">
+                                                                    <span>{key}</span>
+                                                                    <span className="text-right break-all">{previous}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    ) : (
+                                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                            Initial step — variable history will appear after the next event.
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
