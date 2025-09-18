@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Alert,
@@ -13,6 +13,7 @@ import {
 import {
     FaArrowRight,
     FaBug,
+    FaBolt,
     FaChartBar,
     FaCode,
     FaExchangeAlt,
@@ -76,6 +77,8 @@ export default function CodeVisualizer() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
     const [selectedObjectId, setSelectedObjectId] = useState(null);
+    const [liveMode, setLiveMode] = useState(false);
+    const [liveUpdating, setLiveUpdating] = useState(false);
 
     const events = trace?.events ?? [];
     const hasEvents = events.length > 0;
@@ -189,6 +192,10 @@ export default function CodeVisualizer() {
         };
     }, [currentEvent, previousEvent]);
 
+    const liveUpdateTimerRef = useRef(null);
+    const skipLiveRunRef = useRef(true);
+    const activeRequestRef = useRef(null);
+
     useEffect(() => {
         setSelectedObjectId(null);
     }, [currentIndex, trace]);
@@ -197,6 +204,115 @@ export default function CodeVisualizer() {
         if (!objectId) return;
         setSelectedObjectId(objectId);
     };
+
+    useEffect(
+        () => () => {
+            if (activeRequestRef.current) {
+                activeRequestRef.current.abort();
+            }
+            if (liveUpdateTimerRef.current) {
+                clearTimeout(liveUpdateTimerRef.current);
+            }
+        },
+        [],
+    );
+
+    const visualizeCode = useCallback(
+        async ({ sourceCode, triggeredByLive = false } = {}) => {
+            if (liveUpdateTimerRef.current) {
+                clearTimeout(liveUpdateTimerRef.current);
+                liveUpdateTimerRef.current = null;
+            }
+
+            if (!triggeredByLive) {
+                setLiveUpdating(false);
+            }
+
+            const program = typeof sourceCode === 'string' ? sourceCode : code;
+            if (!program.trim()) {
+                setTrace(null);
+                setCurrentIndex(0);
+                setIsPlaying(false);
+                setErrorMessage('Enter some Python code to visualize.');
+                if (triggeredByLive) {
+                    setLiveUpdating(false);
+                } else {
+                    setIsLoading(false);
+                }
+                return;
+            }
+
+            if (activeRequestRef.current) {
+                activeRequestRef.current.abort();
+            }
+
+            const controller = new AbortController();
+            activeRequestRef.current = controller;
+
+            if (triggeredByLive) {
+                setLiveUpdating(true);
+            } else {
+                setIsLoading(true);
+            }
+
+            setIsPlaying(false);
+            setErrorMessage(null);
+
+            try {
+                const response = await fetch('/api/code/visualize-python', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: program }),
+                    signal: controller.signal,
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    setTrace(null);
+                    setCurrentIndex(0);
+                    setErrorMessage(payload?.message || 'Unable to visualize the code.');
+                    return;
+                }
+
+                setTrace(payload);
+                setCurrentIndex(0);
+
+                if (payload?.error?.message) {
+                    setErrorMessage(payload.error.message);
+                } else if (!payload.success) {
+                    setErrorMessage('Visualization completed with errors. Inspect the trace for details.');
+                } else {
+                    setErrorMessage(null);
+                }
+
+                if (!triggeredByLive && Array.isArray(payload?.events) && payload.events.length > 0 && autoPlay) {
+                    setIsPlaying(true);
+                } else {
+                    setIsPlaying(false);
+                }
+            } catch (error) {
+                if (controller.signal.aborted) {
+                    return;
+                }
+                console.error('Failed to visualize python code:', error);
+                setTrace(null);
+                setErrorMessage('An unexpected error occurred while visualizing your code.');
+            } finally {
+                if (activeRequestRef.current === controller) {
+                    activeRequestRef.current = null;
+                }
+                if (triggeredByLive) {
+                    setLiveUpdating(false);
+                } else {
+                    setIsLoading(false);
+                }
+            }
+        },
+        [autoPlay, code],
+    );
 
     const renderReferenceBadge = (payload) => {
         if (!payload) return null;
@@ -373,51 +489,54 @@ export default function CodeVisualizer() {
         }
     }, [incomingPythonCode]);
 
-    const handleVisualize = async () => {
-        setIsLoading(true);
-        setIsPlaying(false);
-        setErrorMessage(null);
-
-        try {
-            const response = await fetch('/api/code/visualize-python', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ code }),
-            });
-
-            const payload = await response.json();
-
-            if (!response.ok) {
-                setTrace(null);
-                setErrorMessage(payload?.message || 'Unable to visualize the code.');
-                return;
+    useEffect(() => {
+        if (!liveMode) {
+            if (liveUpdateTimerRef.current) {
+                clearTimeout(liveUpdateTimerRef.current);
+                liveUpdateTimerRef.current = null;
             }
-
-            setTrace(payload);
-            setCurrentIndex(0);
-            if (payload?.error?.message) {
-                setErrorMessage(payload.error.message);
-            } else if (!payload.success) {
-                setErrorMessage('Visualization completed with errors. Inspect the trace for details.');
-            } else {
-                setErrorMessage(null);
-            }
-
-            if (autoPlay && Array.isArray(payload?.events) && payload.events.length > 0) {
-                setIsPlaying(true);
-            }
-        } catch (error) {
-            console.error('Failed to visualize python code:', error);
-            setTrace(null);
-            setErrorMessage('An unexpected error occurred while visualizing your code.');
-        } finally {
-            setIsLoading(false);
+            setLiveUpdating(false);
+            skipLiveRunRef.current = true;
+            return undefined;
         }
+
+        if (skipLiveRunRef.current) {
+            skipLiveRunRef.current = false;
+            visualizeCode({ sourceCode: code, triggeredByLive: true });
+            return undefined;
+        }
+
+        if (liveUpdateTimerRef.current) {
+            clearTimeout(liveUpdateTimerRef.current);
+        }
+
+        setLiveUpdating(true);
+        liveUpdateTimerRef.current = setTimeout(() => {
+            visualizeCode({ sourceCode: code, triggeredByLive: true });
+        }, 800);
+
+        return () => {
+            if (liveUpdateTimerRef.current) {
+                clearTimeout(liveUpdateTimerRef.current);
+                liveUpdateTimerRef.current = null;
+            }
+        };
+    }, [code, liveMode, visualizeCode]);
+
+    const handleVisualize = () => {
+        visualizeCode({ sourceCode: code });
     };
 
     const handleResetCode = () => {
+        if (activeRequestRef.current) {
+            activeRequestRef.current.abort();
+            activeRequestRef.current = null;
+        }
+        if (liveUpdateTimerRef.current) {
+            clearTimeout(liveUpdateTimerRef.current);
+            liveUpdateTimerRef.current = null;
+        }
+        setLiveUpdating(false);
         setCode(defaultPythonSnippet);
         setTrace(null);
         setCurrentIndex(0);
@@ -502,6 +621,13 @@ export default function CodeVisualizer() {
                                 <Button color="light" onClick={handleResetCode} disabled={isLoading}>
                                     <FaRedo className="mr-2" /> Reset to example
                                 </Button>
+                                <Tooltip content="Automatically re-run the visualizer as you pause typing.">
+                                    <ToggleSwitch
+                                        checked={liveMode}
+                                        label="Live programming mode"
+                                        onChange={() => setLiveMode((prev) => !prev)}
+                                    />
+                                </Tooltip>
                                 <ToggleSwitch
                                     checked={autoPlay}
                                     label="Auto-play after run"
@@ -521,6 +647,16 @@ export default function CodeVisualizer() {
                                         />
                                     </Tooltip>
                                 </div>
+                                {liveMode && (
+                                    <div className="flex items-center gap-2 text-xs font-semibold text-purple-500 dark:text-purple-300">
+                                        {liveUpdating ? (
+                                            <Spinner size="sm" />
+                                        ) : (
+                                            <FaBolt className="text-purple-400" />
+                                        )}
+                                        <span>{liveUpdating ? 'Updating trace…' : 'Live mode active'}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
