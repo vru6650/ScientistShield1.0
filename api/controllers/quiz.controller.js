@@ -17,7 +17,7 @@ export const createQuiz = async (req, res, next) => {
     }
     const { title, description, category, questions, relatedTutorials } = req.body;
 
-    if (!title || questions.length === 0) {
+    if (!title || !Array.isArray(questions) || questions.length === 0) {
         return next(errorHandler(400, 'Please provide quiz title and at least one question.'));
     }
 
