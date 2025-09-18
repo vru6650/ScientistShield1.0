@@ -63,6 +63,7 @@ export default function CodeVisualizer() {
     const [autoPlay, setAutoPlay] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [selectedObjectId, setSelectedObjectId] = useState(null);
 
     const events = trace?.events ?? [];
     const hasEvents = events.length > 0;
@@ -73,6 +74,21 @@ export default function CodeVisualizer() {
     const nextEvent = hasEvents && currentIndex < events.length - 1 ? events[currentIndex + 1] : null;
     const nextLine = nextEvent?.line ?? null;
     const timelineProgress = hasEvents ? Math.round((currentIndex / Math.max(events.length - 1, 1)) * 100) : 0;
+
+    const memoryFrames = currentEvent?.memory?.frames ?? [];
+    const memoryObjects = currentEvent?.memory?.objects ?? [];
+    const memoryAvailable = memoryFrames.length > 0 || memoryObjects.length > 0;
+
+    const objectLookup = useMemo(() => {
+        const lookup = new Map();
+        memoryObjects.forEach((object) => {
+            if (object?.id) {
+                lookup.set(object.id, object);
+            }
+        });
+        return lookup;
+    }, [memoryObjects]);
+    const focusedObject = selectedObjectId ? objectLookup.get(selectedObjectId) : null;
 
     const insights = useMemo(() => {
         const counts = { call: 0, line: 0, return: 0, exception: 0 };
@@ -128,6 +144,169 @@ export default function CodeVisualizer() {
 
         return { added, updated, removed };
     }, [currentEvent, previousEvent]);
+
+    useEffect(() => {
+        setSelectedObjectId(null);
+    }, [currentIndex, trace]);
+
+    const handleSelectObject = (objectId) => {
+        if (!objectId) return;
+        setSelectedObjectId(objectId);
+    };
+
+    const renderReferenceBadge = (payload) => {
+        if (!payload) return null;
+        if (payload.type === 'primitive') {
+            return <span className="text-xs text-gray-500 dark:text-gray-400">{payload.value}</span>;
+        }
+
+        if (payload.type === 'reference') {
+            const isSelected = selectedObjectId === payload.objectId;
+            return (
+                <button
+                    type="button"
+                    onClick={() => handleSelectObject(payload.objectId)}
+                    title={payload.preview || ''}
+                    className={`text-xs font-semibold px-2 py-1 rounded border transition focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                        isSelected
+                            ? 'border-purple-500 bg-purple-500/20 text-purple-200'
+                            : 'border-purple-400/40 bg-purple-500/10 text-purple-200 hover:bg-purple-500/20'
+                    }`}
+                >
+                    {payload.objectId}
+                </button>
+            );
+        }
+
+        return null;
+    };
+
+    const renderCollectionElements = (object) => {
+        if (!Array.isArray(object?.elements) || object.elements.length === 0) {
+            return <p className="text-xs text-gray-500 dark:text-gray-400">(empty)</p>;
+        }
+
+        return (
+            <ul className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-200">
+                {object.elements.map((element, index) => (
+                    <li key={`${object.id}-element-${index}`} className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-gray-500 dark:text-gray-400">[{index}]</span>
+                        <div className="flex items-center gap-2 flex-1 justify-end">
+                            {renderReferenceBadge(element)}
+                            {element?.preview && (
+                                <span className="font-mono text-[0.65rem] text-gray-400 dark:text-gray-500 truncate max-w-[150px]">
+                                    {element.preview}
+                                </span>
+                            )}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        );
+    };
+
+    const renderMappingEntries = (object) => {
+        if (!Array.isArray(object?.entries) || object.entries.length === 0) {
+            return <p className="text-xs text-gray-500 dark:text-gray-400">(empty)</p>;
+        }
+
+        return (
+            <ul className="mt-2 space-y-2 text-xs text-gray-700 dark:text-gray-200">
+                {object.entries.map((entry, index) => (
+                    <li key={`${object.id}-entry-${index}`} className="space-y-1 border border-gray-200 dark:border-gray-700 rounded p-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="uppercase tracking-wide text-[0.6rem] text-gray-500 dark:text-gray-400">Key</span>
+                            {renderReferenceBadge(entry.key)}
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="uppercase tracking-wide text-[0.6rem] text-gray-500 dark:text-gray-400">Value</span>
+                            <div className="flex items-center gap-2">
+                                {renderReferenceBadge(entry.value)}
+                                {entry?.value?.preview && (
+                                    <span className="font-mono text-[0.65rem] text-gray-400 dark:text-gray-500 truncate max-w-[120px]">
+                                        {entry.value.preview}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        );
+    };
+
+    const renderAttributeRows = (object) => {
+        if (!Array.isArray(object?.attributes) || object.attributes.length === 0) {
+            return <p className="text-xs text-gray-500 dark:text-gray-400">(no attributes)</p>;
+        }
+
+        return (
+            <ul className="mt-2 space-y-1 text-xs text-gray-700 dark:text-gray-200">
+                {object.attributes.map((attribute) => (
+                    <li key={`${object.id}-attr-${attribute.name}`} className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-purple-400">{attribute.name}</span>
+                        <div className="flex items-center gap-2">
+                            {renderReferenceBadge(attribute.value)}
+                            {attribute?.value?.preview && (
+                                <span className="font-mono text-[0.65rem] text-gray-400 dark:text-gray-500 truncate max-w-[130px]">
+                                    {attribute.value.preview}
+                                </span>
+                            )}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        );
+    };
+
+    const renderObjectDetails = (object) => {
+        if (!object) {
+            return null;
+        }
+
+        if (object.kind === 'primitive') {
+            return (
+                <p className="text-xs text-gray-600 dark:text-gray-300">
+                    Value: <span className="font-mono text-purple-300">{object.value ?? object.repr}</span>
+                </p>
+            );
+        }
+
+        if (object.kind === 'collection') {
+            return (
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        {object.collectionType || 'collection'} elements
+                    </p>
+                    {renderCollectionElements(object)}
+                </div>
+            );
+        }
+
+        if (object.kind === 'mapping') {
+            return (
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Dictionary entries</p>
+                    {renderMappingEntries(object)}
+                </div>
+            );
+        }
+
+        if (object.kind === 'object') {
+            return (
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Attributes</p>
+                    {renderAttributeRows(object)}
+                </div>
+            );
+        }
+
+        return (
+            <p className="text-xs text-gray-600 dark:text-gray-300">
+                {object.value || object.repr}
+            </p>
+        );
+    };
 
     useEffect(() => {
         if (!isPlaying) return undefined;
@@ -668,6 +847,130 @@ export default function CodeVisualizer() {
                                         </ol>
                                     ) : (
                                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Stack is empty at this step.</p>
+                                    )}
+                                </div>
+
+                                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Frames &amp; heap</h3>
+                                        {selectedObjectId && (
+                                            <span className="text-xs font-mono text-purple-400">
+                                                Focused: {selectedObjectId}
+                                                {focusedObject?.type ? ` · ${focusedObject.type}` : ''}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {memoryAvailable ? (
+                                        <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,0.45fr)]">
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                    Stack frames
+                                                </h4>
+                                                {memoryFrames.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {memoryFrames.map((frame, index) => {
+                                                            const localsEntries = Object.entries(frame.locals || {});
+                                                            return (
+                                                                <div
+                                                                    key={`${frame.function}-${index}`}
+                                                                    className="rounded border border-gray-200 dark:border-gray-700 bg-gray-900/40 p-3 space-y-2"
+                                                                >
+                                                                    <div className="flex items-center justify-between text-xs uppercase tracking-wide text-gray-400">
+                                                                        <span>{frame.function}</span>
+                                                                        <span>line {frame.line}</span>
+                                                                    </div>
+                                                                    {localsEntries.length > 0 ? (
+                                                                        <ul className="space-y-1 text-xs text-gray-200">
+                                                                            {localsEntries.map(([name, info]) => {
+                                                                                const isSelected = info?.objectId && selectedObjectId === info.objectId;
+                                                                                return (
+                                                                                    <li
+                                                                                        key={`${frame.function}-${name}`}
+                                                                                        className={`rounded border px-2 py-1 flex flex-col gap-1 ${
+                                                                                            isSelected
+                                                                                                ? 'border-purple-500 bg-purple-500/20'
+                                                                                                : 'border-gray-700 bg-gray-900/60'
+                                                                                        }`}
+                                                                                    >
+                                                                                        <div className="flex items-center justify-between">
+                                                                                            <span className="font-semibold text-purple-300">{name}</span>
+                                                                                            {renderReferenceBadge(
+                                                                                                info?.objectId
+                                                                                                    ? { type: 'reference', objectId: info.objectId, preview: info.preview }
+                                                                                                    : { type: 'primitive', value: info?.preview }
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {info?.preview && (
+                                                                                            <span className="font-mono text-[0.65rem] text-gray-400 truncate">
+                                                                                                {info.preview}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </li>
+                                                                                );
+                                                                            })}
+                                                                        </ul>
+                                                                    ) : (
+                                                                        <p className="text-xs text-gray-500 dark:text-gray-400">(no locals)</p>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">No frame data captured.</p>
+                                                )}
+                                            </div>
+                                            <div className="space-y-3">
+                                                <h4 className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                    Heap objects
+                                                </h4>
+                                                {memoryObjects.length > 0 ? (
+                                                    <div className="space-y-3">
+                                                        {memoryObjects.map((object) => {
+                                                            const isSelected = selectedObjectId === object.id;
+                                                            return (
+                                                                <div
+                                                                    key={object.id}
+                                                                    className={`rounded border p-3 space-y-2 transition ${
+                                                                        isSelected
+                                                                            ? 'border-purple-500 shadow-lg shadow-purple-500/20'
+                                                                            : 'border-gray-200 dark:border-gray-700'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center justify-between text-xs">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleSelectObject(object.id)}
+                                                                            className={`font-semibold font-mono px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                                                                                isSelected
+                                                                                    ? 'bg-purple-600 text-white'
+                                                                                    : 'bg-gray-900 text-purple-200'
+                                                                            }`}
+                                                                        >
+                                                                            {object.id}
+                                                                        </button>
+                                                                        <span className="uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                                                            {object.type}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className="text-[0.7rem] text-gray-400 dark:text-gray-500">
+                                                                        {object.kind}
+                                                                        {object.truncated ? ' · truncated' : ''}
+                                                                    </p>
+                                                                    {renderObjectDetails(object)}
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">No heap objects recorded.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                            Memory snapshots are unavailable for this step.
+                                        </p>
                                     )}
                                 </div>
                             </div>
