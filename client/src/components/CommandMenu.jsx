@@ -22,14 +22,14 @@ const CommandMenu = ({ isOpen, onClose }) => {
                 { label: 'Create a Tutorial', path: '/create-tutorial' },
                 { label: 'Create a Quiz', path: '/create-quiz' },
                 { label: 'Create a Page', path: '/create-page' },
-                { label: 'Python Visualizer', path: '/visualizer' },
+                { label: 'Code Visualizer', path: '/visualizer' },
             ];
         }
 
         return [
             { label: 'Profile', path: '/dashboard?tab=profile' },
             { label: 'Create a Post', path: '/create-post' },
-            { label: 'Python Visualizer', path: '/visualizer' },
+            { label: 'Code Visualizer', path: '/visualizer' },
         ];
     }, [currentUser]);
 

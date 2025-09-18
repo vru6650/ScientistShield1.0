@@ -17,6 +17,8 @@ const defaultCodes = {
     python: `print("Hello, Python!")`
 };
 
+const visualizerSupportedLanguages = new Set(['python', 'cpp', 'javascript']);
+
 export default function CodeEditor({ initialCode = {}, language = 'html' }) {
     const { theme } = useSelector((state) => state.theme);
     const outputRef = useRef(null);
@@ -195,7 +197,7 @@ export default function CodeEditor({ initialCode = {}, language = 'html' }) {
                             <FaRedo className="mr-2 h-4 w-4" /> Reset
                         </Button>
                     </motion.div>
-                    {selectedLanguage === 'python' && (
+                    {visualizerSupportedLanguages.has(selectedLanguage) && (
                         <motion.div
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
