@@ -51,7 +51,7 @@ export default function TryItPage() {
                 <Alert color="purple" className="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex items-center gap-3 text-sm sm:text-base">
                         <FaLaptopCode className="text-xl" />
-                        <span>Need to walk through execution line-by-line? Open the interactive Python visualizer.</span>
+                        <span>Need to walk through execution line-by-line? Open the interactive code visualizer.</span>
                     </div>
                     <Button gradientDuoTone="purpleToBlue" as={Link} to="/visualizer">
                         <FaExternalLinkAlt className="mr-2" /> Launch Visualizer

@@ -5,6 +5,7 @@ import {
     Badge,
     Button,
     Card,
+    Select,
     Spinner,
     Textarea,
     ToggleSwitch,
@@ -28,7 +29,51 @@ import {
     FaTerminal,
 } from 'react-icons/fa';
 
-const defaultPythonSnippet = `def factorial(n: int) -> int:\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n\nprint('5! =', factorial(5))`;
+const LANGUAGE_OPTIONS = [
+    {
+        id: 'python',
+        label: 'Python 3',
+        description: 'Executed locally with detailed stack, heap, and stdout capture.',
+    },
+    {
+        id: 'java',
+        label: 'Java',
+        description: 'Powered by Python Tutor. Requires valid main entry point.',
+    },
+    {
+        id: 'c',
+        label: 'C',
+        description: 'Powered by Python Tutor for C programs compiled on-demand.',
+    },
+    {
+        id: 'cpp',
+        label: 'C++',
+        description: 'Powered by Python Tutor for modern C++ snippets.',
+    },
+    {
+        id: 'javascript',
+        label: 'JavaScript',
+        description: 'Powered by Python Tutor. Uses the latest ECMAScript runtime.',
+    },
+    {
+        id: 'typescript',
+        label: 'TypeScript',
+        description: 'Powered by Python Tutor with automatic transpilation.',
+    },
+];
+
+const SUPPORTED_LANGUAGE_IDS = new Set(LANGUAGE_OPTIONS.map((option) => option.id));
+
+const DEFAULT_SNIPPETS = {
+    python: `def factorial(n: int) -> int:\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n\nprint('5! =', factorial(5))`,
+    java: `import java.util.*;\n\npublic class Main {\n    public static int factorial(int n) {\n        if (n <= 1) {\n            return 1;\n        }\n        return n * factorial(n - 1);\n    }\n\n    public static void main(String[] args) {\n        System.out.println("5! = " + factorial(5));\n    }\n}`,
+    c: `#include <stdio.h>\n\nint factorial(int n) {\n    if (n <= 1) {\n        return 1;\n    }\n    return n * factorial(n - 1);\n}\n\nint main(void) {\n    printf("5! = %d\\n", factorial(5));\n    return 0;\n}`,
+    cpp: `#include <iostream>\n\nint factorial(int n) {\n    if (n <= 1) {\n        return 1;\n    }\n    return n * factorial(n - 1);\n}\n\nint main() {\n    std::cout << "5! = " << factorial(5) << std::endl;\n    return 0;\n}`,
+    javascript: `function factorial(n) {\n    if (n <= 1) {\n        return 1;\n    }\n    return n * factorial(n - 1);\n}\n\nconsole.log('5! =', factorial(5));`,
+    typescript: `function factorial(n: number): number {\n    if (n <= 1) {\n        return 1;\n    }\n    return n * factorial(n - 1);\n}\n\nconsole.log('5! =', factorial(5));`,
+};
+
+const getLanguageLabel = (id) => LANGUAGE_OPTIONS.find((option) => option.id === id)?.label || id;
 
 const eventMetadata = {
     call: { label: 'Call', color: 'purple' },
@@ -63,12 +108,21 @@ const formatFrameLabel = (frame) => {
 
 export default function CodeVisualizer() {
     const location = useLocation();
-    const incomingPythonCode =
-        location.state?.language === 'python' && typeof location.state?.code === 'string'
-            ? location.state.code
-            : null;
+    const locationStateLanguage = location.state?.language;
+    const locationStateCode = location.state?.code;
+    const initialLanguage = SUPPORTED_LANGUAGE_IDS.has(locationStateLanguage)
+        ? locationStateLanguage
+        : 'python';
+    const initialCode = typeof locationStateCode === 'string' ? locationStateCode : null;
 
-    const [code, setCode] = useState(incomingPythonCode || defaultPythonSnippet);
+    const [language, setLanguage] = useState(initialLanguage);
+    const [codeByLanguage, setCodeByLanguage] = useState(() => {
+        const seeds = { ...DEFAULT_SNIPPETS };
+        if (initialCode) {
+            seeds[initialLanguage] = initialCode;
+        }
+        return seeds;
+    });
     const [trace, setTrace] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -79,6 +133,22 @@ export default function CodeVisualizer() {
     const [selectedObjectId, setSelectedObjectId] = useState(null);
     const [liveMode, setLiveMode] = useState(false);
     const [liveUpdating, setLiveUpdating] = useState(false);
+
+    const code = codeByLanguage[language] ?? '';
+
+    const currentLanguageOption = useMemo(
+        () => LANGUAGE_OPTIONS.find((option) => option.id === language) ?? LANGUAGE_OPTIONS[0],
+        [language],
+    );
+    const languageHelperText =
+        language === 'python'
+            ? 'The visualizer captures standard output, return values, exceptions, and heap snapshots.'
+            : 'Visualization is powered by Python Tutor. Heap diagrams may be simplified depending on the language runtime.';
+    const liveModeSupported = language === 'python';
+    const howItWorksDescription =
+        language === 'python'
+            ? 'We execute your code in an isolated Python worker with tracing enabled, capturing every call, line, return, and exception locally.'
+            : 'We send your program to the official Python Tutor service for secure, step-by-step execution and return the resulting trace to you.';
 
     const events = trace?.events ?? [];
     const hasEvents = events.length > 0;
@@ -218,7 +288,7 @@ export default function CodeVisualizer() {
     );
 
     const visualizeCode = useCallback(
-        async ({ sourceCode, triggeredByLive = false } = {}) => {
+        async ({ sourceCode, triggeredByLive = false, runLanguage } = {}) => {
             if (liveUpdateTimerRef.current) {
                 clearTimeout(liveUpdateTimerRef.current);
                 liveUpdateTimerRef.current = null;
@@ -228,12 +298,17 @@ export default function CodeVisualizer() {
                 setLiveUpdating(false);
             }
 
-            const program = typeof sourceCode === 'string' ? sourceCode : code;
+            const targetLanguage = SUPPORTED_LANGUAGE_IDS.has(runLanguage) ? runLanguage : language;
+            const program =
+                typeof sourceCode === 'string'
+                    ? sourceCode
+                    : codeByLanguage[targetLanguage] ?? '';
+            const languageLabel = getLanguageLabel(targetLanguage);
             if (!program.trim()) {
                 setTrace(null);
                 setCurrentIndex(0);
                 setIsPlaying(false);
-                setErrorMessage('Enter some Python code to visualize.');
+                setErrorMessage(`Enter some ${languageLabel} code to visualize.`);
                 if (triggeredByLive) {
                     setLiveUpdating(false);
                 } else {
@@ -259,12 +334,12 @@ export default function CodeVisualizer() {
             setErrorMessage(null);
 
             try {
-                const response = await fetch('/api/code/visualize-python', {
+                const response = await fetch('/api/code/visualize', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ code: program }),
+                    body: JSON.stringify({ code: program, language: targetLanguage }),
                     signal: controller.signal,
                 });
 
@@ -297,7 +372,7 @@ export default function CodeVisualizer() {
                 if (controller.signal.aborted) {
                     return;
                 }
-                console.error('Failed to visualize python code:', error);
+                console.error('Failed to visualize code:', error);
                 setTrace(null);
                 setErrorMessage('An unexpected error occurred while visualizing your code.');
             } finally {
@@ -311,7 +386,7 @@ export default function CodeVisualizer() {
                 }
             }
         },
-        [autoPlay, code],
+        [autoPlay, codeByLanguage, language],
     );
 
     const renderReferenceBadge = (payload) => {
@@ -484,10 +559,33 @@ export default function CodeVisualizer() {
     }, [isPlaying, playDelay, currentIndex, events.length, hasEvents]);
 
     useEffect(() => {
-        if (incomingPythonCode) {
-            setCode(incomingPythonCode);
+        const nextLanguage = SUPPORTED_LANGUAGE_IDS.has(locationStateLanguage)
+            ? locationStateLanguage
+            : null;
+        const nextCode = typeof locationStateCode === 'string' ? locationStateCode : null;
+
+        if (nextLanguage && nextLanguage !== language) {
+            setLanguage(nextLanguage);
         }
-    }, [incomingPythonCode]);
+        if (nextCode) {
+            setCodeByLanguage((previous) => ({
+                ...previous,
+                [nextLanguage || language]: nextCode,
+            }));
+        }
+    }, [language, location.key, locationStateCode, locationStateLanguage]);
+
+    useEffect(() => {
+        setTrace(null);
+        setCurrentIndex(0);
+        setIsPlaying(false);
+        setErrorMessage(null);
+        setSelectedObjectId(null);
+        skipLiveRunRef.current = true;
+        if (!liveModeSupported) {
+            setLiveMode(false);
+        }
+    }, [language, liveModeSupported]);
 
     useEffect(() => {
         if (!liveMode) {
@@ -502,7 +600,7 @@ export default function CodeVisualizer() {
 
         if (skipLiveRunRef.current) {
             skipLiveRunRef.current = false;
-            visualizeCode({ sourceCode: code, triggeredByLive: true });
+            visualizeCode({ sourceCode: code, triggeredByLive: true, runLanguage: language });
             return undefined;
         }
 
@@ -512,7 +610,7 @@ export default function CodeVisualizer() {
 
         setLiveUpdating(true);
         liveUpdateTimerRef.current = setTimeout(() => {
-            visualizeCode({ sourceCode: code, triggeredByLive: true });
+            visualizeCode({ sourceCode: code, triggeredByLive: true, runLanguage: language });
         }, 800);
 
         return () => {
@@ -524,7 +622,7 @@ export default function CodeVisualizer() {
     }, [code, liveMode, visualizeCode]);
 
     const handleVisualize = () => {
-        visualizeCode({ sourceCode: code });
+        visualizeCode({ sourceCode: code, runLanguage: language });
     };
 
     const handleResetCode = () => {
@@ -537,7 +635,10 @@ export default function CodeVisualizer() {
             liveUpdateTimerRef.current = null;
         }
         setLiveUpdating(false);
-        setCode(defaultPythonSnippet);
+        setCodeByLanguage((previous) => ({
+            ...previous,
+            [language]: DEFAULT_SNIPPETS[language] ?? '',
+        }));
         setTrace(null);
         setCurrentIndex(0);
         setIsPlaying(false);
@@ -573,19 +674,19 @@ export default function CodeVisualizer() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-10 px-4 text-gray-900 dark:text-gray-100">
             <div className="max-w-7xl mx-auto space-y-8">
                 <div className="space-y-3 text-center">
-                    <h1 className="text-4xl lg:text-5xl font-extrabold">Python Execution Visualizer</h1>
+                    <h1 className="text-4xl lg:text-5xl font-extrabold">Interactive Code Execution Visualizer</h1>
                     <p className="text-lg max-w-3xl mx-auto text-gray-600 dark:text-gray-300">
-                        Step through your Python code line by line. Watch the call stack evolve, inspect variable state, and
-                        capture console output without leaving ScientistShield.
+                        Step through Python, Java, C, C++, JavaScript, or TypeScript code line by line. Inspect the call stack,
+                        track variables, and capture console output without leaving ScientistShield.
                     </p>
                 </div>
 
                 <Alert color="info" icon={FaInfoCircle} className="max-w-3xl mx-auto">
-                    Paste Python 3 code, press <strong>Visualize</strong>, and then walk through the execution timeline using
-                    the playback controls. Each step includes the active line, variable snapshots, and the call stack.
+                    Select your language, paste code, press <strong>Visualize</strong>, and explore each execution step using
+                    the playback controls. Every step highlights the active line, exposes the current stack, and records stdout.
                     <span className="block mt-2 text-sm">
                         Follow the <span className="font-semibold text-green-500">green arrow</span> for the line currently
-                        executing and the <span className="font-semibold text-red-500">red arrow</span> for what runs next.
+                        executing and the <span className="font-semibold text-red-500">red arrow</span> to preview what runs next.
                     </span>
                 </Alert>
 
@@ -593,15 +694,43 @@ export default function CodeVisualizer() {
                     <div className="flex flex-col lg:flex-row lg:items-start gap-6">
                         <div className="flex-1 space-y-4">
                             <div className="space-y-2">
-                                <label className="block text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                                    Python code
-                                </label>
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                                    <div>
+                                        <label className="block text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                            {currentLanguageOption.label} code
+                                        </label>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                            {currentLanguageOption.description}
+                                        </p>
+                                    </div>
+                                    <Select
+                                        value={language}
+                                        onChange={(event) => {
+                                            const nextLanguage = event.target.value;
+                                            if (SUPPORTED_LANGUAGE_IDS.has(nextLanguage)) {
+                                                setLanguage(nextLanguage);
+                                            }
+                                        }}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {LANGUAGE_OPTIONS.map((option) => (
+                                            <option key={option.id} value={option.id}>
+                                                {option.label}
+                                            </option>
+                                        ))}
+                                    </Select>
+                                </div>
                                 <Textarea
                                     rows={16}
                                     value={code}
-                                    onChange={(event) => setCode(event.target.value)}
+                                    onChange={(event) =>
+                                        setCodeByLanguage((previous) => ({
+                                            ...previous,
+                                            [language]: event.target.value,
+                                        }))
+                                    }
                                     className="font-mono text-sm"
-                                    helperText="The visualizer captures standard output, return values, and exceptions."
+                                    helperText={languageHelperText}
                                 />
                             </div>
 
@@ -621,11 +750,21 @@ export default function CodeVisualizer() {
                                 <Button color="light" onClick={handleResetCode} disabled={isLoading}>
                                     <FaRedo className="mr-2" /> Reset to example
                                 </Button>
-                                <Tooltip content="Automatically re-run the visualizer as you pause typing.">
+                                <Tooltip
+                                    content={
+                                        liveModeSupported
+                                            ? 'Automatically re-run the visualizer as you pause typing.'
+                                            : 'Live programming mode is available for Python only.'
+                                    }
+                                >
                                     <ToggleSwitch
-                                        checked={liveMode}
+                                        checked={liveModeSupported && liveMode}
                                         label="Live programming mode"
-                                        onChange={() => setLiveMode((prev) => !prev)}
+                                        disabled={!liveModeSupported || isLoading}
+                                        onChange={() => {
+                                            if (!liveModeSupported) return;
+                                            setLiveMode((prev) => !prev);
+                                        }}
                                     />
                                 </Tooltip>
                                 <ToggleSwitch
@@ -666,10 +805,7 @@ export default function CodeVisualizer() {
                                     <FaCode className="text-purple-500" />
                                     <div>
                                         <h2 className="text-sm font-semibold">How it works</h2>
-                                        <p className="text-xs text-gray-600 dark:text-gray-300">
-                                            We execute your Python code in an isolated worker with tracing enabled, capturing every
-                                            call, line, return, and exception. Nothing is stored on the server.
-                                        </p>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300">{howItWorksDescription}</p>
                                     </div>
                                 </div>
                             </Card>

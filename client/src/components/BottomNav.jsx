@@ -9,7 +9,7 @@ const items = [
     { to: '/', label: 'Home', icon: FaHome },
     { to: '/tutorials', label: 'Tutorials', icon: FaBook },
     { to: '/quizzes', label: 'Quizzes', icon: FaQuestionCircle },
-    { to: '/visualizer', label: 'Python Visualizer', icon: FaLaptopCode }
+    { to: '/visualizer', label: 'Code Visualizer', icon: FaLaptopCode }
 ];
 
 export default function BottomNav() {
