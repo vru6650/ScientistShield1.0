@@ -44,7 +44,7 @@ export default function useAdminDashboardData(isEnabled) {
                 fetch('/api/comment/getcomments?limit=5', authRequestOptions),
                 fetch('/api/pages?limit=5', authRequestOptions),
                 fetch('/api/tutorial/gettutorials?limit=5'),
-                fetch('/api/quiz/quizzes?limit=5'),
+                fetch('/api/quizzes?limit=5'),
             ]);
 
             const [userData, postData, commentData, pageData, tutorialData, quizData] = await Promise.all([
