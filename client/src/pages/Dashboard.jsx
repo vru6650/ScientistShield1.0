@@ -12,6 +12,7 @@ const DashComments = lazy(() => import('../components/DashComments'));
 const DashboardComp = lazy(() => import('../components/DashboardComp'));
 const DashTutorials = lazy(() => import('../components/DashTutorials'));
 const DashQuizzes = lazy(() => import('../components/DashQuizzes')); // NEW: Import DashQuizzes component
+const DashPages = lazy(() => import('../components/DashPages'));
 
 // Create a map to associate tab names with their components.
 const componentMap = {
@@ -22,6 +23,7 @@ const componentMap = {
     dash: DashboardComp,
     tutorials: DashTutorials,
     quizzes: DashQuizzes, // NEW: Add DashQuizzes to the map
+    content: DashPages,
 };
 
 export default function Dashboard() {

@@ -8,6 +8,7 @@ import {
   HiAnnotation,
   HiChartPie,
   HiPuzzle, // NEW: Import puzzle icon for quizzes
+  HiCollection,
 } from 'react-icons/hi';
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -22,6 +23,7 @@ const sidebarLinks = [
   { tab: 'comments', label: 'Comments', icon: HiAnnotation, adminOnly: true },
   { tab: 'tutorials', label: 'Tutorials', icon: HiDocumentText, adminOnly: true },
   { tab: 'quizzes', label: 'Quizzes', icon: HiPuzzle, adminOnly: true }, // NEW: Add Quizzes link
+  { tab: 'content', label: 'Content', icon: HiCollection, adminOnly: true },
 ];
 
 export default function DashSidebar() {
