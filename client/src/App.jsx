@@ -35,6 +35,9 @@ const UpdateQuiz = lazy(() => import('./pages/UpdateQuiz'));
 
 // NEW: Lazy load the Try it Yourself page
 const TryItPage = lazy(() => import('./pages/TryItPage'));
+const CreatePage = lazy(() => import('./pages/CreatePage'));
+const UpdatePage = lazy(() => import('./pages/UpdatePage'));
+const ContentPage = lazy(() => import('./pages/ContentPage'));
 
 // A fallback component to show while pages are loading
 const LoadingFallback = () => (
@@ -66,6 +69,7 @@ export default function App() {
 
                         {/* NEW: Try It Yourself Route */}
                         <Route path="tryit" element={<TryItPage />} />
+                        <Route path="content/:slug" element={<ContentPage />} />
 
                         {/* Private Routes also use the main layout */}
                         <Route element={<PrivateRoute />}>
@@ -82,6 +86,9 @@ export default function App() {
                             {/* Admin Quiz Routes */}
                             <Route path="create-quiz" element={<CreateQuiz />} />
                             <Route path="update-quiz/:quizId" element={<UpdateQuiz />} />
+                            {/* Admin Content Routes */}
+                            <Route path="create-page" element={<CreatePage />} />
+                            <Route path="update-page/:pageId" element={<UpdatePage />} />
                         </Route>
 
                         <Route path="*" element={<NotFound />} />

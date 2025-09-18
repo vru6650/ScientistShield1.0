@@ -91,3 +91,40 @@ export interface QuizSubmissionResult {
     results: QuestionResult[];
     message: string;
 }
+
+export interface PageSectionItem {
+    title?: string;
+    body?: string;
+    icon?: string;
+}
+
+export interface PageSection {
+    _id?: string;
+    type: 'hero' | 'rich-text' | 'feature-grid' | 'cta' | 'custom';
+    title?: string;
+    subtitle?: string;
+    body?: string;
+    alignment?: 'left' | 'center' | 'right';
+    background?: string;
+    media?: {
+        url?: string;
+        alt?: string;
+    };
+    cta?: {
+        label?: string;
+        url?: string;
+    };
+    items?: PageSectionItem[];
+    order?: number;
+}
+
+export interface PageContent {
+    _id: string;
+    title: string;
+    slug: string;
+    description?: string;
+    status: 'draft' | 'published';
+    sections: PageSection[];
+    createdAt: string;
+    updatedAt: string;
+}
