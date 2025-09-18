@@ -36,11 +36,13 @@ export default function useAdminDashboardData(isEnabled) {
         setError(null);
 
         try {
+            const authRequestOptions = { credentials: 'include' };
+
             const [userRes, postRes, commentRes, pageRes, tutorialRes, quizRes] = await Promise.all([
-                fetch('/api/user/getusers?limit=5'),
-                fetch('/api/post/getposts?limit=5'),
-                fetch('/api/comment/getcomments?limit=5'),
-                fetch('/api/pages?limit=5', { credentials: 'include' }),
+                fetch('/api/user/getusers?limit=5', authRequestOptions),
+                fetch('/api/post/getposts?limit=5', authRequestOptions),
+                fetch('/api/comment/getcomments?limit=5', authRequestOptions),
+                fetch('/api/pages?limit=5', authRequestOptions),
                 fetch('/api/tutorial/gettutorials?limit=5'),
                 fetch('/api/quiz/quizzes?limit=5'),
             ]);
