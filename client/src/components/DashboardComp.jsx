@@ -1,78 +1,21 @@
-import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { HiAnnotation, HiCollection, HiDocumentText, HiOutlineUserGroup } from 'react-icons/hi';
 import { Alert, Badge, Spinner, Table } from 'flowbite-react';
 import StatCard from './StatCard'; // Import new component
 import RecentDataTable from './RecentDataTable'; // Import new component
+import useAdminDashboardData from '../hooks/useAdminDashboardData';
 
 export default function DashboardComp() {
   const { currentUser } = useSelector((state) => state.user);
-  const [dashboardData, setDashboardData] = useState({
-    users: [],
-    comments: [],
-    posts: [],
-    pages: [],
-    totalUsers: 0,
-    totalPosts: 0,
-    totalComments: 0,
-    totalPages: 0,
-    lastMonthUsers: 0,
-    lastMonthPosts: 0,
-    lastMonthComments: 0,
-    lastMonthPages: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: dashboardData, loading, error } = useAdminDashboardData(Boolean(currentUser?.isAdmin));
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch all data concurrently for better performance
-        const [userRes, postRes, commentRes, pageRes] = await Promise.all([
-          fetch('/api/user/getusers?limit=5'),
-          fetch('/api/post/getposts?limit=5'),
-          fetch('/api/comment/getcomments?limit=5'),
-          fetch('/api/pages?limit=5', { credentials: 'include' }),
-        ]);
-
-        const userData = await userRes.json();
-        const postData = await postRes.json();
-        const commentData = await commentRes.json();
-        const pageData = await pageRes.json();
-
-        if (userRes.ok && postRes.ok && commentRes.ok && pageRes.ok) {
-          setDashboardData({
-            users: userData.users,
-            totalUsers: userData.totalUsers,
-            lastMonthUsers: userData.lastMonthUsers,
-            posts: postData.posts,
-            totalPosts: postData.totalPosts,
-            lastMonthPosts: postData.lastMonthPosts,
-            comments: commentData.comments,
-            totalComments: commentData.totalComments,
-            lastMonthComments: commentData.lastMonthComments,
-            pages: pageData.pages,
-            totalPages: pageData.totalCount,
-            lastMonthPages: pageData.lastMonthCount,
-          });
-        } else {
-          // Handle potential errors from the API responses
-          setError('Failed to fetch some data. Please try again.');
-          console.error('API Error:', { userData, postData, commentData, pageData });
-        }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (currentUser.isAdmin) {
-      fetchData();
-    }
-  }, [currentUser]);
+  if (!currentUser?.isAdmin) {
+    return (
+        <div className='p-3 md:mx-auto'>
+          <Alert color='warning'>Administrator access required.</Alert>
+        </div>
+    );
+  }
 
   if (loading) {
     return (

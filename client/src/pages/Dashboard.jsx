@@ -3,6 +3,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Spinner } from 'flowbite-react';
 import DashSidebar from '../components/DashSidebar';
+import { useSelector } from 'react-redux';
 
 // Dynamically import components using React.lazy
 const DashProfile = lazy(() => import('../components/DashProfile'));
@@ -29,12 +30,14 @@ const componentMap = {
 export default function Dashboard() {
     const location = useLocation();
     const [tab, setTab] = useState('');
+    const { currentUser } = useSelector((state) => state.user);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(location.search);
         const tabFromUrl = urlParams.get('tab');
-        setTab(tabFromUrl || 'dash');
-    }, [location.search]);
+        const defaultTab = currentUser?.isAdmin ? 'dash' : 'profile';
+        setTab(tabFromUrl || defaultTab);
+    }, [location.search, currentUser]);
 
     const ActiveComponent = componentMap[tab];
 

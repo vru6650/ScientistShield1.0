@@ -260,6 +260,21 @@ export default function Header() {
                           </span>
                               </div>
                               <hr className="dark:border-gray-600" />
+                              {currentUser.isAdmin && (
+                                  <>
+                                    <Link to={'/admin'} onClick={() => setIsDropdownOpen(false)}>
+                                      <div className="block px-space-lg py-space-sm text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+                                        Admin Panel
+                                      </div>
+                                    </Link>
+                                    <Link to={'/dashboard?tab=dash'} onClick={() => setIsDropdownOpen(false)}>
+                                      <div className="block px-space-lg py-space-sm text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
+                                        Dashboard
+                                      </div>
+                                    </Link>
+                                    <hr className="dark:border-gray-600" />
+                                  </>
+                              )}
                               <Link to={'/dashboard?tab=profile'} onClick={() => setIsDropdownOpen(false)}>
                                 <div className="block px-space-lg py-space-sm text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer">
                                   Profile

@@ -38,6 +38,7 @@ const TryItPage = lazy(() => import('./pages/TryItPage'));
 const CreatePage = lazy(() => import('./pages/CreatePage'));
 const UpdatePage = lazy(() => import('./pages/UpdatePage'));
 const ContentPage = lazy(() => import('./pages/ContentPage'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 
 // A fallback component to show while pages are loading
 const LoadingFallback = () => (
@@ -78,6 +79,7 @@ export default function App() {
 
                         {/* Admin Routes also use the main layout */}
                         <Route element={<OnlyAdminPrivateRoute />}>
+                            <Route path="admin" element={<AdminPanel />} />
                             <Route path="create-post" element={<CreatePost />} />
                             <Route path="update-post/:postId" element={<UpdatePost />} />
                             {/* Admin Tutorial Routes */}
