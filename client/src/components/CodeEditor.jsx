@@ -195,7 +195,7 @@ export default function CodeEditor({ initialCode = {}, language = 'html' }) {
                             <FaRedo className="mr-2 h-4 w-4" /> Reset
                         </Button>
                     </motion.div>
-                    {(selectedLanguage === 'python' || selectedLanguage === 'javascript') && (
+                    {selectedLanguage === 'python' && (
                         <motion.div
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}

@@ -44,7 +44,7 @@ const navLinks = [
   { label: 'Home', path: '/' },
   { label: 'About', path: '/about' },
   { label: 'Projects', path: '/projects' },
-  { label: 'Visualizer', path: '/visualizer' },
+  { label: 'Python Visualizer', path: '/visualizer' },
 ];
 
 // --- Main Header Component ---
