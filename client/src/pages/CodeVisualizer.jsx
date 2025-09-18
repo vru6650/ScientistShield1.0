@@ -48,6 +48,18 @@ const formatStepLabel = (event) => {
     return meta.label;
 };
 
+const formatFrameLabel = (frame) => {
+    if (!frame) {
+        return '';
+    }
+
+    const functionName = frame.function || '<module>';
+    if (frame.line) {
+        return `${functionName} (line ${frame.line})`;
+    }
+    return functionName;
+};
+
 export default function CodeVisualizer() {
     const location = useLocation();
     const incomingPythonCode =
@@ -143,6 +155,38 @@ export default function CodeVisualizer() {
         });
 
         return { added, updated, removed };
+    }, [currentEvent, previousEvent]);
+
+    const stackDiff = useMemo(() => {
+        if (!currentEvent) {
+            return { persistedLength: 0, pushed: [], popped: [] };
+        }
+
+        const currentStack = Array.isArray(currentEvent.stack) ? currentEvent.stack : [];
+        const previousStack = Array.isArray(previousEvent?.stack) ? previousEvent.stack : [];
+
+        let persistedLength = 0;
+        const minLength = Math.min(currentStack.length, previousStack.length);
+
+        for (let index = 0; index < minLength; index += 1) {
+            const currentFrame = currentStack[index];
+            const previousFrame = previousStack[index];
+            if (
+                !currentFrame ||
+                !previousFrame ||
+                currentFrame.function !== previousFrame.function ||
+                currentFrame.line !== previousFrame.line
+            ) {
+                break;
+            }
+            persistedLength += 1;
+        }
+
+        return {
+            persistedLength,
+            pushed: currentStack.slice(persistedLength),
+            popped: previousStack.slice(persistedLength),
+        };
     }, [currentEvent, previousEvent]);
 
     useEffect(() => {
@@ -837,14 +881,75 @@ export default function CodeVisualizer() {
                                 <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-900">
                                     <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300">Call stack</h3>
                                     {currentEvent.stack && currentEvent.stack.length > 0 ? (
-                                        <ol className="mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-200">
-                                            {currentEvent.stack.map((frame, index) => (
-                                                <li key={`${frame.function}-${index}`} className="flex justify-between">
-                                                    <span>{frame.function}</span>
-                                                    <span className="font-mono text-xs text-gray-500">line {frame.line}</span>
-                                                </li>
-                                            ))}
-                                        </ol>
+                                        <div className="mt-3 space-y-3 text-sm text-gray-700 dark:text-gray-200">
+                                            <ol className="space-y-2">
+                                                {currentEvent.stack.map((frame, index) => {
+                                                    const isTopFrame = index === currentEvent.stack.length - 1;
+                                                    const isNewFrame = index >= stackDiff.persistedLength;
+                                                    return (
+                                                        <li
+                                                            key={`${frame.function}-${index}`}
+                                                            className={`rounded border px-3 py-2 flex items-center justify-between gap-3 transition ${
+                                                                isNewFrame
+                                                                    ? 'border-purple-400/60 bg-purple-500/10'
+                                                                    : 'border-gray-200 dark:border-gray-700 bg-gray-900/40'
+                                                            } ${
+                                                                isTopFrame ? 'shadow-lg shadow-purple-500/10 ring-1 ring-purple-400/40' : ''
+                                                            }`}
+                                                        >
+                                                            <div>
+                                                                <p className="font-semibold text-gray-800 dark:text-gray-100">
+                                                                    {frame.function}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 dark:text-gray-400">line {frame.line}</p>
+                                                            </div>
+                                                            <div className="flex flex-col items-end gap-1 text-xs uppercase tracking-wide">
+                                                                {isNewFrame && (
+                                                                    <span className="flex items-center gap-1 text-purple-400">
+                                                                        <FaPlusCircle className="text-[0.6rem]" /> New frame
+                                                                    </span>
+                                                                )}
+                                                                {isTopFrame && (
+                                                                    <span className="px-2 py-1 rounded-full bg-purple-500/20 text-purple-300">
+                                                                        Current call
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ol>
+                                            {(stackDiff.pushed.length > 0 || stackDiff.popped.length > 0) && (
+                                                <div className="space-y-1 border-t border-dashed border-gray-200 dark:border-gray-700 pt-2 text-xs">
+                                                    {stackDiff.pushed.length > 0 && (
+                                                        <p className="flex items-center gap-2 text-purple-400">
+                                                            <FaPlusCircle />
+                                                            <span>
+                                                                {stackDiff.pushed.length === 1
+                                                                    ? 'A new frame was pushed:'
+                                                                    : `${stackDiff.pushed.length} frames were pushed:`}{' '}
+                                                                {stackDiff.pushed.map((frame) => formatFrameLabel(frame)).join(' → ')}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                    {stackDiff.popped.length > 0 && (
+                                                        <p className="flex items-center gap-2 text-rose-400">
+                                                            <FaMinusCircle />
+                                                            <span>
+                                                                {stackDiff.popped.length === 1
+                                                                    ? 'A frame returned:'
+                                                                    : `${stackDiff.popped.length} frames returned:`}{' '}
+                                                                {stackDiff.popped.map((frame) => formatFrameLabel(frame)).join(' → ')}
+                                                            </span>
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                Frames are ordered from the first call at the top to the active frame at the bottom.
+                                                Watch how recursive calls push new frames and returns pop them off the stack.
+                                            </p>
+                                        </div>
                                     ) : (
                                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Stack is empty at this step.</p>
                                     )}
