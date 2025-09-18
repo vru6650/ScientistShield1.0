@@ -4,7 +4,7 @@ import axios from 'axios';
 // Create an Axios instance with a base URL and credentials
 // This instance will automatically include cookies in every request
 const API = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: import.meta.env.VITE_API_URL ?? '',
     withCredentials: true,
 });
 

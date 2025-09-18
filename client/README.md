@@ -52,3 +52,17 @@ Reusable primitives are available in `src/components/ui/`:
 - `Modal` – overlay modal for confirmations and dialogs.
 
 Use these components to avoid duplicating common styles across the app.
+
+## Environment Variables
+
+Copy `.env.example` to `.env` in the project root to customize how the client connects to the API. The following variable is available:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VITE_API_URL` | _(empty)_ | Optional base URL for all API requests. Leave unset to use same-origin relative paths, or set it to an absolute URL such as `http://localhost:3000` when the backend is hosted elsewhere. |
+
+Example `.env` snippet:
+
+```bash
+VITE_API_URL=http://localhost:3000
+```
