@@ -1,18 +1,35 @@
 // client/src/components/CommandMenu.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal, TextInput } from 'flowbite-react';
 import { AiOutlineSearch } from 'react-icons/ai';
+import { useSelector } from 'react-redux';
 
 const CommandMenu = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const modalRef = useRef(null);
+    const { currentUser } = useSelector((state) => state.user);
 
-    const quickLinks = [
-        { label: 'Profile', path: '/dashboard?tab=profile' },
-        { label: 'Create a Post', path: '/create-post' },
-    ];
+    const quickLinks = useMemo(() => {
+        if (currentUser?.isAdmin) {
+            return [
+                { label: 'Admin Panel', path: '/admin' },
+                { label: 'Dashboard overview', path: '/dashboard?tab=dash' },
+                { label: 'Profile', path: '/dashboard?tab=profile' },
+                { label: 'Manage posts', path: '/dashboard?tab=posts' },
+                { label: 'Create a Post', path: '/create-post' },
+                { label: 'Create a Tutorial', path: '/create-tutorial' },
+                { label: 'Create a Quiz', path: '/create-quiz' },
+                { label: 'Create a Page', path: '/create-page' },
+            ];
+        }
+
+        return [
+            { label: 'Profile', path: '/dashboard?tab=profile' },
+            { label: 'Create a Post', path: '/create-post' },
+        ];
+    }, [currentUser]);
 
     const handleSubmit = (e) => {
         e.preventDefault();

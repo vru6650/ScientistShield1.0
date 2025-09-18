@@ -13,7 +13,8 @@ import {
     FaRegBell,
     FaRegFileAlt,
     FaRegCreditCard,
-    FaThumbtack
+    FaThumbtack,
+    FaShieldAlt,
 } from 'react-icons/fa';
 import { Avatar, Tooltip, Button } from 'flowbite-react';
 
@@ -305,11 +306,25 @@ const Sidebar = ({ isCollapsed, isPinned, setIsPinned }) => {
 
             <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
                 <SectionHeader label="Main" isCollapsed={isCollapsed} />
-                <CollapsibleNavItem icon={FaTachometerAlt} label="Dashboard" isCollapsed={isCollapsed}>
-                    <SubItem to="/dashboard?tab=activity" label="Activity" />
-                    <SubItem to="/dashboard?tab=traffic" label="Traffic" />
-                    <SubItem to="/dashboard?tab=statistic" label="Statistic" />
-                </CollapsibleNavItem>
+                {currentUser?.isAdmin && (
+                    <>
+                        <NavItem
+                            to="/admin"
+                            icon={FaShieldAlt}
+                            label="Admin Panel"
+                            isCollapsed={isCollapsed}
+                        />
+                        <CollapsibleNavItem icon={FaTachometerAlt} label="Dashboard" isCollapsed={isCollapsed}>
+                            <SubItem to="/dashboard?tab=dash" label="Overview" />
+                            <SubItem to="/dashboard?tab=posts" label="Posts" />
+                            <SubItem to="/dashboard?tab=tutorials" label="Tutorials" />
+                            <SubItem to="/dashboard?tab=quizzes" label="Quizzes" />
+                            <SubItem to="/dashboard?tab=content" label="Content" />
+                            <SubItem to="/dashboard?tab=comments" label="Comments" />
+                            <SubItem to="/dashboard?tab=users" label="Users" />
+                        </CollapsibleNavItem>
+                    </>
+                )}
 
                 {mainNavItems.map(item => <NavItem key={item.to} {...item} isCollapsed={isCollapsed} />)}
 
