@@ -16,6 +16,7 @@ import pageRoutes from './routes/page.route.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import cors from 'cors';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ mongoose
     });
 
 const __dirname = path.resolve();
+const distPath = path.join(__dirname, 'client', 'dist');
 
 const app = express();
 
@@ -64,11 +66,24 @@ app.use('/api/code', cppRoutes); // NEW: Use the new C++ route
 app.use('/api/code', pythonRoutes); // NEW: Use the new Python route
 app.use('/api', pageRoutes);
 
-app.use(express.static(path.join(__dirname, '/client/dist')));
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'dist', 'index.html'));
-});
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+} else {
+    const warningMessage =
+        'Client build directory missing. Run "npm run build --prefix client" to create the production bundle.';
+    console.warn(warningMessage);
+
+    app.get('*', (req, res) => {
+        res.status(503).json({
+            success: false,
+            message: warningMessage,
+        });
+    });
+}
 
 app.use((err, req, res, next) => {
     // ==========================================================
