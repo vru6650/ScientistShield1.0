@@ -212,7 +212,7 @@ const Sidebar = ({ isCollapsed, isPinned, setIsPinned }) => {
         { to: '/tutorials', label: 'Tutorials', icon: FaBook },
         { to: '/quizzes', label: 'Quizzes', icon: FaQuestionCircle },
         { to: '/projects', label: 'Projects', icon: FaProjectDiagram },
-        { to: '/visualizer', label: 'Code Visualizer', icon: FaLaptopCode },
+        { to: '/visualizer', label: 'Python Visualizer', icon: FaLaptopCode },
         { to: '/invoices', label: 'Invoices', icon: FaRegFileAlt },
         { to: '/wallet', label: 'Wallet', icon: FaRegCreditCard },
         { to: '/notification', label: 'Notification', icon: FaRegBell },
