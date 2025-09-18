@@ -35,6 +35,7 @@ const UpdateQuiz = lazy(() => import('./pages/UpdateQuiz'));
 
 // NEW: Lazy load the Try it Yourself page
 const TryItPage = lazy(() => import('./pages/TryItPage'));
+const CodeVisualizer = lazy(() => import('./pages/CodeVisualizer'));
 const CreatePage = lazy(() => import('./pages/CreatePage'));
 const UpdatePage = lazy(() => import('./pages/UpdatePage'));
 const ContentPage = lazy(() => import('./pages/ContentPage'));
@@ -70,6 +71,7 @@ export default function App() {
 
                         {/* NEW: Try It Yourself Route */}
                         <Route path="tryit" element={<TryItPage />} />
+                        <Route path="visualizer" element={<CodeVisualizer />} />
                         <Route path="content/:slug" element={<ContentPage />} />
 
                         {/* Private Routes also use the main layout */}
