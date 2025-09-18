@@ -15,6 +15,8 @@ import {
 import StatCard from '../components/StatCard';
 import RecentDataTable from '../components/RecentDataTable';
 import useAdminDashboardData from '../hooks/useAdminDashboardData';
+import { motion } from 'framer-motion';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const quickActions = [
     {
@@ -104,8 +106,18 @@ export default function AdminPanel() {
         ? new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeStyle: 'short' }).format(lastSynced)
         : 'Awaiting first sync';
 
+    const chartData = [
+        { name: 'Jan', users: data.lastMonthUsers },
+        { name: 'Feb', users: data.totalUsers - data.lastMonthUsers },
+        { name: 'Mar', users: data.totalUsers },
+    ];
+
     return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 py-10'>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            className='min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 py-10'>
             <div className='mx-auto max-w-7xl space-y-12 px-4 sm:px-6 lg:px-8'>
                 <header className='flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between'>
                     <div className='space-y-4'>
@@ -162,8 +174,9 @@ export default function AdminPanel() {
                                 to={action.to}
                                 className='group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-900'
                             >
-                                <div
-                                    className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${action.gradient} p-6 text-white shadow-lg transition-all duration-200 group-hover:-translate-y-1 group-hover:shadow-xl`}
+                                <motion.div
+                                    whileHover={{ y: -5, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
+                                    className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${action.gradient} p-6 text-white shadow-lg transition-all duration-200`}
                                 >
                                     <div className='flex items-start justify-between'>
                                         <div>
@@ -177,66 +190,82 @@ export default function AdminPanel() {
                                         Open workspace
                                         <HiArrowRight className='ml-2 h-4 w-4 transition-transform duration-200 group-hover:translate-x-1' />
                                     </span>
-                                </div>
+                                </motion.div>
                             </Link>
                         ))}
                     </div>
                 </section>
 
-                <section className='space-y-4'>
-                    <div className='flex items-center justify-between gap-4'>
-                        <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Platform overview</h2>
-                        <p className='text-sm text-gray-500 dark:text-gray-400'>Track growth and engagement at a glance.</p>
+                <section className='grid gap-6 lg:grid-cols-3'>
+                    <div className='lg:col-span-2 space-y-4'>
+                        <div className='flex items-center justify-between gap-4'>
+                            <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>Platform Overview</h2>
+                            <p className='text-sm text-gray-500 dark:text-gray-400'>Track growth and engagement at a glance.</p>
+                        </div>
+                        <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
+                            <StatCard
+                                title='Community members'
+                                count={data.totalUsers}
+                                lastMonthCount={data.lastMonthUsers}
+                                icon={HiOutlineUserGroup}
+                                iconBgColor='bg-sky-600'
+                                loading={loading}
+                            />
+                            <StatCard
+                                title='Posts published'
+                                count={data.totalPosts}
+                                lastMonthCount={data.lastMonthPosts}
+                                icon={HiDocumentText}
+                                iconBgColor='bg-indigo-600'
+                                loading={loading}
+                            />
+                            <StatCard
+                                title='Comments logged'
+                                count={data.totalComments}
+                                lastMonthCount={data.lastMonthComments}
+                                icon={HiAnnotation}
+                                iconBgColor='bg-amber-600'
+                                loading={loading}
+                            />
+                            <StatCard
+                                title='Tutorials live'
+                                count={data.totalTutorials}
+                                lastMonthCount={data.lastMonthTutorials}
+                                icon={HiAcademicCap}
+                                iconBgColor='bg-emerald-600'
+                                loading={loading}
+                            />
+                            <StatCard
+                                title='Active quizzes'
+                                count={data.totalQuizzes}
+                                lastMonthCount={data.lastMonthQuizzes}
+                                icon={HiPuzzle}
+                                iconBgColor='bg-purple-600'
+                                loading={loading}
+                            />
+                            <StatCard
+                                title='Content pages'
+                                count={data.totalPages}
+                                lastMonthCount={data.lastMonthPages}
+                                icon={HiCollection}
+                                iconBgColor='bg-rose-600'
+                                loading={loading}
+                            />
+                        </div>
                     </div>
-                    <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-                        <StatCard
-                            title='Community members'
-                            count={data.totalUsers}
-                            lastMonthCount={data.lastMonthUsers}
-                            icon={HiOutlineUserGroup}
-                            iconBgColor='bg-sky-600'
-                            loading={loading}
-                        />
-                        <StatCard
-                            title='Posts published'
-                            count={data.totalPosts}
-                            lastMonthCount={data.lastMonthPosts}
-                            icon={HiDocumentText}
-                            iconBgColor='bg-indigo-600'
-                            loading={loading}
-                        />
-                        <StatCard
-                            title='Comments logged'
-                            count={data.totalComments}
-                            lastMonthCount={data.lastMonthComments}
-                            icon={HiAnnotation}
-                            iconBgColor='bg-amber-600'
-                            loading={loading}
-                        />
-                        <StatCard
-                            title='Tutorials live'
-                            count={data.totalTutorials}
-                            lastMonthCount={data.lastMonthTutorials}
-                            icon={HiAcademicCap}
-                            iconBgColor='bg-emerald-600'
-                            loading={loading}
-                        />
-                        <StatCard
-                            title='Active quizzes'
-                            count={data.totalQuizzes}
-                            lastMonthCount={data.lastMonthQuizzes}
-                            icon={HiPuzzle}
-                            iconBgColor='bg-purple-600'
-                            loading={loading}
-                        />
-                        <StatCard
-                            title='Content pages'
-                            count={data.totalPages}
-                            lastMonthCount={data.lastMonthPages}
-                            icon={HiCollection}
-                            iconBgColor='bg-rose-600'
-                            loading={loading}
-                        />
+                    <div className='space-y-4'>
+                        <h2 className='text-xl font-semibold text-gray-900 dark:text-white'>User Registrations</h2>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <AreaChart data={chartData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Area type="monotone" dataKey="users" stroke="#8884d8" fill="#8884d8" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </section>
 
@@ -354,18 +383,21 @@ export default function AdminPanel() {
                                 to={item.to}
                                 className='group rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:border-cyan-500 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-gray-700 dark:bg-slate-900/80 dark:hover:border-cyan-400 dark:focus-visible:ring-offset-slate-900'
                             >
-                                <div className='flex items-start justify-between gap-4'>
+                                <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    className='flex items-start justify-between gap-4'
+                                >
                                     <div>
                                         <h3 className='text-lg font-semibold text-gray-900 dark:text-white'>{item.title}</h3>
                                         <p className='mt-2 text-sm text-gray-500 dark:text-gray-400'>{item.description}</p>
                                     </div>
                                     <item.icon className='h-8 w-8 text-cyan-500 transition-colors duration-200 group-hover:text-cyan-400' />
-                                </div>
+                                </motion.div>
                             </Link>
                         ))}
                     </div>
                 </section>
             </div>
-        </div>
+        </motion.div>
     );
 }
