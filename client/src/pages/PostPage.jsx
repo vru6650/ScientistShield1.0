@@ -19,6 +19,10 @@ import ReadingExperienceControls, {
     THEME_OPTIONS,
     FONT_FAMILIES,
     COLUMN_WIDTHS,
+    LETTER_SPACING_VALUES,
+    PARAGRAPH_SPACING_VALUES,
+    PAGE_MARGIN_VALUES,
+    COLUMN_LAYOUT_VALUES,
 } from '../components/ReadingExperienceControls';
 import SocialShare from '../components/SocialShare';
 import ClapButton from '../components/ClapButton';
@@ -159,6 +163,13 @@ export default function PostPage() {
     const contentFontFamily = FONT_FAMILIES[readingSettings.fontFamily] || FONT_FAMILIES.serif;
     const contentWidth = COLUMN_WIDTHS[readingSettings.columnWidth] || COLUMN_WIDTHS.comfortable;
     const articleMaxWidth = Math.min(contentWidth + 160, 960);
+    const columnLayout = COLUMN_LAYOUT_VALUES[readingSettings.readingColumns] || COLUMN_LAYOUT_VALUES.single;
+    const letterSpacingValue =
+        LETTER_SPACING_VALUES[readingSettings.letterSpacing] ?? LETTER_SPACING_VALUES.standard;
+    const paragraphSpacingValue =
+        PARAGRAPH_SPACING_VALUES[readingSettings.paragraphSpacing] ?? PARAGRAPH_SPACING_VALUES.balanced;
+    const pagePaddingValue = PAGE_MARGIN_VALUES[readingSettings.pageMargin] ?? PAGE_MARGIN_VALUES.balanced;
+    const textAlignValue = readingSettings.textAlign === 'justify' ? 'justify' : 'start';
 
     const updateReadingSetting = (key, value) => {
         setReadingSettings(prevSettings => {
@@ -173,25 +184,41 @@ export default function PostPage() {
         setReadingSettings({ ...DEFAULT_READING_SETTINGS });
     };
 
-    const readerThemeStyle = useMemo(() => ({
-        backgroundColor: activeTheme.background,
-        color: activeTheme.textColor,
-        '--reader-link-color': activeTheme.linkColor,
-        '--reader-code-bg': activeTheme.codeBackground,
-        '--reader-code-color': activeTheme.codeColor,
-        '--reader-border-color': activeTheme.borderColor,
-        '--reader-toc-bg': activeTheme.tocBackground,
-        '--reader-toc-border': activeTheme.tocBorder,
-        '--reader-toc-text': activeTheme.mutedText,
-        '--reader-toc-accent': activeTheme.linkColor,
-        '--reader-inline-code-bg': activeTheme.inlineCodeBackground,
-        '--reader-inline-code-color': activeTheme.inlineCodeColor,
-        '--reader-quote-bg': activeTheme.quoteBackground,
-        '--reader-quote-border': activeTheme.quoteBorder,
-        '--reader-copy-bg': activeTheme.copyButtonBackground,
-        '--reader-copy-hover-bg': activeTheme.copyButtonHover,
-        '--reader-copy-text': activeTheme.copyButtonText,
-    }), [activeTheme]);
+    const readerThemeStyle = useMemo(
+        () => ({
+            backgroundColor: activeTheme.background,
+            color: activeTheme.textColor,
+            '--reader-link-color': activeTheme.linkColor,
+            '--reader-code-bg': activeTheme.codeBackground,
+            '--reader-code-color': activeTheme.codeColor,
+            '--reader-border-color': activeTheme.borderColor,
+            '--reader-toc-bg': activeTheme.tocBackground,
+            '--reader-toc-border': activeTheme.tocBorder,
+            '--reader-toc-text': activeTheme.mutedText,
+            '--reader-toc-accent': activeTheme.linkColor,
+            '--reader-inline-code-bg': activeTheme.inlineCodeBackground,
+            '--reader-inline-code-color': activeTheme.inlineCodeColor,
+            '--reader-quote-bg': activeTheme.quoteBackground,
+            '--reader-quote-border': activeTheme.quoteBorder,
+            '--reader-copy-bg': activeTheme.copyButtonBackground,
+            '--reader-copy-hover-bg': activeTheme.copyButtonHover,
+            '--reader-copy-text': activeTheme.copyButtonText,
+            '--reader-letter-spacing': letterSpacingValue,
+            '--reader-paragraph-spacing': paragraphSpacingValue,
+            '--reader-page-padding': pagePaddingValue,
+            '--reader-text-align': textAlignValue,
+            '--reader-column-count': String(columnLayout.columnCount),
+            '--reader-column-gap': columnLayout.columnGap,
+        }),
+        [
+            activeTheme,
+            columnLayout,
+            letterSpacingValue,
+            pagePaddingValue,
+            paragraphSpacingValue,
+            textAlignValue,
+        ],
+    );
 
     const contentStyle = useMemo(() => ({
         fontSize: `${readingSettings.fontSize}px`,

@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
-import { HiOutlineAdjustmentsHorizontal, HiOutlineEye, HiOutlineSparkles } from 'react-icons/hi2';
+import {
+    HiOutlineAdjustmentsHorizontal,
+    HiOutlineArrowsRightLeft,
+    HiOutlineEye,
+    HiOutlineSparkles,
+} from 'react-icons/hi2';
 import { HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
-import { FaMinus, FaPlus } from 'react-icons/fa';
+import { FaAlignJustify, FaAlignLeft, FaColumns, FaMinus, FaPlus } from 'react-icons/fa';
 
 export const DEFAULT_READING_SETTINGS = {
     theme: 'classic',
@@ -10,6 +15,11 @@ export const DEFAULT_READING_SETTINGS = {
     fontFamily: 'serif',
     columnWidth: 'comfortable',
     focusMode: false,
+    textAlign: 'justify',
+    letterSpacing: 'standard',
+    paragraphSpacing: 'balanced',
+    pageMargin: 'balanced',
+    readingColumns: 'single',
 };
 
 export const THEME_OPTIONS = [
@@ -107,6 +117,86 @@ const FONT_OPTIONS = [
     { id: 'mono', label: 'Mono' },
 ];
 
+export const TEXT_ALIGNMENT_OPTIONS = [
+    { id: 'left', label: 'Align left', description: 'Classic ragged-right paragraphs', icon: FaAlignLeft },
+    { id: 'justify', label: 'Justify', description: 'Magazine-style block alignment', icon: FaAlignJustify },
+];
+
+export const LETTER_SPACING_OPTIONS = [
+    { id: 'tight', label: 'Tight', description: 'Fit more words per line', value: '0em' },
+    { id: 'standard', label: 'Standard', description: 'Balanced letter spacing', value: '0.01em' },
+    { id: 'relaxed', label: 'Relaxed', description: 'Airier, Kindle-style spacing', value: '0.025em' },
+];
+
+export const LETTER_SPACING_VALUES = LETTER_SPACING_OPTIONS.reduce((acc, option) => {
+    acc[option.id] = option.value;
+    return acc;
+}, {});
+
+export const PARAGRAPH_SPACING_OPTIONS = [
+    { id: 'compact', label: 'Compact', description: 'Minimal paragraph breaks', value: '1.2em' },
+    { id: 'balanced', label: 'Balanced', description: 'Default Kindle rhythm', value: '1.65em' },
+    { id: 'roomy', label: 'Roomy', description: 'Extra space for deep focus', value: '2.1em' },
+];
+
+export const PARAGRAPH_SPACING_VALUES = PARAGRAPH_SPACING_OPTIONS.reduce((acc, option) => {
+    acc[option.id] = option.value;
+    return acc;
+}, {});
+
+export const PAGE_MARGIN_OPTIONS = [
+    {
+        id: 'compact',
+        label: 'Compact',
+        description: 'Edge-to-edge immersion',
+        value: 'clamp(1rem, 1vw + 0.75rem, 2rem)',
+    },
+    {
+        id: 'balanced',
+        label: 'Balanced',
+        description: 'Comfortable side breathing room',
+        value: 'clamp(1.75rem, 2vw + 1rem, 3rem)',
+    },
+    {
+        id: 'generous',
+        label: 'Generous',
+        description: 'Notebook-style wide margins',
+        value: 'clamp(2.5rem, 2.5vw + 1.5rem, 3.75rem)',
+    },
+];
+
+export const PAGE_MARGIN_VALUES = PAGE_MARGIN_OPTIONS.reduce((acc, option) => {
+    acc[option.id] = option.value;
+    return acc;
+}, {});
+
+export const COLUMN_LAYOUT_OPTIONS = [
+    {
+        id: 'single',
+        label: 'Single column',
+        description: 'Continuous scroll for any screen',
+        icon: HiOutlineArrowsRightLeft,
+        columnCount: 1,
+        columnGap: '0',
+    },
+    {
+        id: 'two',
+        label: 'Two columns',
+        description: 'Book spread on wider displays',
+        icon: FaColumns,
+        columnCount: 2,
+        columnGap: '3.5rem',
+    },
+];
+
+export const COLUMN_LAYOUT_VALUES = COLUMN_LAYOUT_OPTIONS.reduce((acc, option) => {
+    acc[option.id] = {
+        columnCount: option.columnCount,
+        columnGap: option.columnGap,
+    };
+    return acc;
+}, {});
+
 const MIN_FONT_SIZE = 15;
 const MAX_FONT_SIZE = 26;
 
@@ -142,6 +232,26 @@ const ReadingExperienceControls = ({ settings, onSettingChange, onReset, maxWidt
 
     const handleColumnWidthChange = (columnWidth) => {
         onSettingChange('columnWidth', columnWidth);
+    };
+
+    const handleTextAlignChange = (alignment) => {
+        onSettingChange('textAlign', alignment);
+    };
+
+    const handleLetterSpacingChange = (letterSpacing) => {
+        onSettingChange('letterSpacing', letterSpacing);
+    };
+
+    const handleParagraphSpacingChange = (paragraphSpacing) => {
+        onSettingChange('paragraphSpacing', paragraphSpacing);
+    };
+
+    const handlePageMarginChange = (margin) => {
+        onSettingChange('pageMargin', margin);
+    };
+
+    const handleColumnLayoutChange = (layout) => {
+        onSettingChange('readingColumns', layout);
     };
 
     const toggleFocusMode = () => {
@@ -278,6 +388,82 @@ const ReadingExperienceControls = ({ settings, onSettingChange, onReset, maxWidt
                     </div>
 
                     <div className='space-y-3'>
+                        <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Alignment</h3>
+                        <div className='flex flex-wrap gap-2'>
+                            {TEXT_ALIGNMENT_OPTIONS.map((option) => {
+                                const Icon = option.icon;
+                                const isActive = settings.textAlign === option.id;
+                                return (
+                                    <button
+                                        key={option.id}
+                                        type='button'
+                                        onClick={() => handleTextAlignChange(option.id)}
+                                        className={`flex-1 min-w-[150px] rounded-xl border px-3 py-2 text-left transition-colors duration-200 ${
+                                            isActive
+                                                ? 'border-blue-500/70 bg-blue-500/10 text-blue-600 dark:text-blue-300'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400/60'
+                                        }`}
+                                    >
+                                        <span className='flex items-center gap-2 text-sm font-semibold'>
+                                            <Icon className='text-base' />
+                                            {option.label}
+                                        </span>
+                                        <span className='mt-1 block text-[0.65rem] text-slate-500 dark:text-slate-400'>
+                                            {option.description}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                        <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Letter spacing</h3>
+                        <div className='space-y-2'>
+                            {LETTER_SPACING_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    type='button'
+                                    onClick={() => handleLetterSpacingChange(option.id)}
+                                    className={`w-full rounded-xl border px-3 py-2 text-left transition-colors duration-200 ${
+                                        settings.letterSpacing === option.id
+                                            ? 'border-blue-500/70 bg-blue-500/10 text-blue-600 dark:text-blue-300'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400/60'
+                                    }`}
+                                >
+                                    <span className='block text-sm font-semibold'>{option.label}</span>
+                                    <span className='block text-[0.7rem] text-slate-500 dark:text-slate-400'>
+                                        {option.description}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                        <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Paragraph spacing</h3>
+                        <div className='space-y-2'>
+                            {PARAGRAPH_SPACING_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    type='button'
+                                    onClick={() => handleParagraphSpacingChange(option.id)}
+                                    className={`w-full rounded-xl border px-3 py-2 text-left transition-colors duration-200 ${
+                                        settings.paragraphSpacing === option.id
+                                            ? 'border-blue-500/70 bg-blue-500/10 text-blue-600 dark:text-blue-300'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400/60'
+                                    }`}
+                                >
+                                    <span className='block text-sm font-semibold'>{option.label}</span>
+                                    <span className='block text-[0.7rem] text-slate-500 dark:text-slate-400'>
+                                        {option.description}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className='space-y-3'>
                         <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Page width</h3>
                         <div className='space-y-2'>
                             {COLUMN_WIDTH_OPTIONS.map((option) => (
@@ -297,6 +483,59 @@ const ReadingExperienceControls = ({ settings, onSettingChange, onReset, maxWidt
                                     </span>
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                        <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Page margins</h3>
+                        <div className='space-y-2'>
+                            {PAGE_MARGIN_OPTIONS.map((option) => (
+                                <button
+                                    key={option.id}
+                                    type='button'
+                                    onClick={() => handlePageMarginChange(option.id)}
+                                    className={`w-full rounded-xl border px-3 py-2 text-left transition-colors duration-200 ${
+                                        settings.pageMargin === option.id
+                                            ? 'border-blue-500/70 bg-blue-500/10 text-blue-600 dark:text-blue-300'
+                                            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400/60'
+                                    }`}
+                                >
+                                    <span className='block text-sm font-semibold'>{option.label}</span>
+                                    <span className='block text-[0.7rem] text-slate-500 dark:text-slate-400'>
+                                        {option.description}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className='space-y-3'>
+                        <h3 className='text-sm font-semibold text-slate-700 dark:text-slate-200'>Layout</h3>
+                        <div className='space-y-2'>
+                            {COLUMN_LAYOUT_OPTIONS.map((option) => {
+                                const Icon = option.icon;
+                                const isActive = settings.readingColumns === option.id;
+                                return (
+                                    <button
+                                        key={option.id}
+                                        type='button'
+                                        onClick={() => handleColumnLayoutChange(option.id)}
+                                        className={`w-full rounded-xl border px-3 py-2 text-left transition-colors duration-200 ${
+                                            isActive
+                                                ? 'border-blue-500/70 bg-blue-500/10 text-blue-600 dark:text-blue-300'
+                                                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-400/60'
+                                        }`}
+                                    >
+                                        <span className='flex items-center gap-2 text-sm font-semibold'>
+                                            <Icon className='text-base' />
+                                            {option.label}
+                                        </span>
+                                        <span className='mt-1 block text-[0.7rem] text-slate-500 dark:text-slate-400'>
+                                            {option.description}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 

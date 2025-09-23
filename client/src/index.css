@@ -347,7 +347,7 @@ html {
   border-radius: 1.5rem;
   border: 1px solid var(--reader-border-color, rgba(148, 163, 184, 0.28));
   box-shadow: 0 30px 70px -45px rgba(15, 23, 42, 0.65);
-  padding: clamp(1.75rem, 2vw + 1rem, 3rem);
+  padding: var(--reader-page-padding, clamp(1.75rem, 2vw + 1rem, 3rem));
   width: 100%;
   transition: background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
   backdrop-filter: blur(2px);
@@ -363,6 +363,7 @@ html {
 
 .kindle-reader .post-content {
   width: 100%;
+  column-gap: var(--reader-column-gap, 0);
 }
 
 .kindle-reader .post-content h1,
@@ -375,8 +376,40 @@ html {
 }
 
 .kindle-reader .post-content p {
-  margin-bottom: 1.65em;
-  letter-spacing: 0.01em;
+  margin-bottom: var(--reader-paragraph-spacing, 1.65em);
+  letter-spacing: var(--reader-letter-spacing, 0.01em);
+  text-align: var(--reader-text-align, start);
+}
+
+.kindle-reader .post-content p,
+.kindle-reader .post-content h2,
+.kindle-reader .post-content h3,
+.kindle-reader .post-content h4,
+.kindle-reader .post-content h5,
+.kindle-reader .post-content h6,
+.kindle-reader .post-content ul,
+.kindle-reader .post-content ol,
+.kindle-reader .post-content blockquote,
+.kindle-reader .post-content pre,
+.kindle-reader .post-content figure {
+  break-inside: avoid;
+}
+
+.kindle-reader .post-content ul,
+.kindle-reader .post-content ol {
+  text-align: var(--reader-text-align, start);
+  margin-bottom: var(--reader-paragraph-spacing, 1.65em);
+}
+
+.kindle-reader .post-content blockquote {
+  text-align: var(--reader-text-align, start);
+}
+
+@media (min-width: 1024px) {
+  .kindle-reader .post-content {
+    column-count: var(--reader-column-count, 1);
+    column-gap: var(--reader-column-gap, 0);
+  }
 }
 
 
