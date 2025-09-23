@@ -1,296 +1,443 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import PropTypes from 'prop-types';
-import { useState } from 'react';
-import { useSelector } from 'react-redux';
-import Skeleton from 'react-loading-skeleton';
-import 'react-loading-skeleton/dist/skeleton.css';
-import { Tooltip, Spinner } from 'flowbite-react';
-import moment from 'moment';
+import { Button, Spinner, Alert } from 'flowbite-react';
+import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import DOMPurify from 'dompurify';
+import parse from 'html-react-parser';
+import { useEffect, useState, useMemo } from 'react';
+import hljs from 'highlight.js';
+import ImageViewer from 'react-simple-image-viewer';
+import { Helmet } from 'react-helmet-async';
+import { HiOutlineAdjustmentsHorizontal } from 'react-icons/hi2';
+import { AnimatePresence, motion } from 'framer-motion';
 
-// --- Icon and Hook Imports ---
-import { FaHeart, FaRegHeart, FaBookmark, FaRegBookmark, FaShareAlt } from 'react-icons/fa';
-import { HiDotsHorizontal } from 'react-icons/hi';
-import { useLike } from '../hooks/useLike';
-import { useBookmark } from '../hooks/useBookmark';
-import useUser from '../hooks/useUser';
+// --- Component Imports ---
+import CommentSection from '../components/CommentSection';
+import PostCard from '../components/PostCard';
+import TableOfContents from '../components/TableOfContents';
+import ReadingProgressBar from '../components/ReadingProgressBar';
+import ReadingExperienceControls, {
+    DEFAULT_READING_SETTINGS,
+    THEME_OPTIONS,
+    FONT_FAMILIES,
+    COLUMN_WIDTHS,
+    LETTER_SPACING_VALUES,
+    PARAGRAPH_SPACING_VALUES,
+    PAGE_MARGIN_VALUES,
+    COLUMN_LAYOUT_VALUES,
+} from '../components/ReadingExperienceControls';
+import SocialShare from '../components/SocialShare';
+import ClapButton from '../components/ClapButton';
+import CodeEditor from '../components/CodeEditor';
+import '../Tiptap.css';
 
-// --- SUB-COMPONENTS for Instagram-style Layout ---
+// --- API fetching functions ---
+const fetchPostBySlug = async (postSlug) => {
+    const res = await fetch(`/api/post/getposts?slug=${postSlug}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to fetch post.');
+    if (data.posts.length === 0) throw new Error('Post not found.');
+    return data.posts[0];
+};
 
-const CardHeader = ({ userId }) => {
-    const { user, isLoading } = useUser(userId);
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-between gap-3 p-3">
-                <div className="flex items-center gap-3">
-                    <Skeleton circle width={40} height={40} />
-                    <Skeleton width={120} />
-                </div>
-                <Skeleton width={24} height={24} />
-            </div>
-        );
+const fetchRelatedPosts = async (category) => {
+    if (!category) return [];
+    try {
+        const res = await fetch(`/api/post/getposts?category=${category}&limit=3`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.posts;
+    } catch (error) {
+        console.error('Failed to fetch related posts:', error);
+        return [];
     }
-    return (
-        <div className="flex items-center justify-between gap-3 p-3">
-            <div className="flex items-center gap-3">
-                <img
-                    src={user?.profilePicture}
-                    alt={user?.username}
-                    className='w-10 h-10 rounded-full object-cover border-2 border-gray-300 dark:border-gray-500'
-                />
-                <span className='font-bold text-sm text-gray-800 dark:text-gray-200'>{user?.username || 'Anonymous'}</span>
-            </div>
-            <button className="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full p-2">
-                <HiDotsHorizontal size={20} />
-            </button>
+};
+
+// --- Skeleton Component ---
+const PostPageSkeleton = () => (
+    <main className='p-3 flex flex-col max-w-6xl mx-auto min-h-screen animate-pulse'>
+        <div className='h-10 bg-gray-300 dark:bg-gray-600 rounded-md mt-10 p-3 max-w-2xl mx-auto w-full'></div>
+        <div className='h-6 w-24 bg-gray-300 dark:bg-gray-600 rounded-full self-center mt-5'></div>
+        <div className='mt-10 p-3 max-h-[600px] w-full h-96 bg-gray-300 dark:bg-gray-600 rounded-lg'></div>
+        <div className='p-3 max-w-2xl mx-auto w-full mt-5'>
+            <div className='h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-full mb-4'></div>
+            <div className='h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-full mb-4'></div>
+            <div className='h-4 bg-gray-300 dark:bg-gray-600 rounded-full w-3/4'></div>
+        </div>
+    </main>
+);
+
+// --- Helper functions ---
+const generateSlug = (text) => {
+    if (!text) return '';
+    return text.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '').replace(/--+/g, '-');
+};
+const getTextFromNode = (node) => {
+    if (node.type === 'text') return node.data;
+    if (node.type !== 'tag' || !node.children) return '';
+    return node.children.map(getTextFromNode).join('');
+};
+
+const READER_STORAGE_KEY = 'ss:reader-settings:v2'; // Updated key for new settings
+
+export default function PostPage() {
+    const { postSlug } = useParams();
+    const [isControlsOpen, setIsControlsOpen] = useState(false); // State for the modal
+
+    const [readingSettings, setReadingSettings] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = window.localStorage.getItem(READER_STORAGE_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    return { ...DEFAULT_READING_SETTINGS, ...parsed };
+                } catch (error) {
+                    console.warn('Failed to parse stored reader settings:', error);
+                }
+            }
+        }
+        return { ...DEFAULT_READING_SETTINGS };
+    });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem(READER_STORAGE_KEY, JSON.stringify(readingSettings));
+        }
+    }, [readingSettings]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+        const className = 'kindle-focus-mode';
+        if (readingSettings.focusMode) {
+            document.body.classList.add(className);
+        } else {
+            document.body.classList.remove(className);
+        }
+        return () => {
+            document.body.classList.remove(className);
+        };
+    }, [readingSettings.focusMode]);
+
+    const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
+        queryKey: ['post', postSlug],
+        queryFn: () => fetchPostBySlug(postSlug),
+        staleTime: 5 * 60 * 1000,
+    });
+
+    const { data: relatedPosts } = useQuery({
+        queryKey: ['relatedPosts', post?.category],
+        queryFn: () => fetchRelatedPosts(post.category),
+        enabled: !!post,
+    });
+
+    const [currentImage, setCurrentImage] = useState(0);
+    const [isViewerOpen, setIsViewerOpen] = useState(false);
+
+    const sanitizedContent = useMemo(() => {
+        return post?.content ? DOMPurify.sanitize(post.content) : '';
+    }, [post?.content]);
+
+    const headings = useMemo(() => {
+        if (!sanitizedContent) return [];
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = sanitizedContent;
+        const headingNodes = tempDiv.querySelectorAll('h2, h3');
+        return Array.from(headingNodes).map(node => ({
+            id: generateSlug(node.innerText),
+            text: node.innerText,
+            level: node.tagName.toLowerCase(),
+        }));
+    }, [sanitizedContent]);
+
+    const imagesInPost = useMemo(() => {
+        if (!sanitizedContent) return [];
+        const imageSources = [];
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = sanitizedContent;
+        const imageElements = tempDiv.querySelectorAll('img');
+        imageElements.forEach(img => imageSources.push(img.src));
+        return imageSources;
+    }, [sanitizedContent]);
+
+    const activeTheme = useMemo(() => {
+        return THEME_OPTIONS.find(theme => theme.id === readingSettings.theme) || THEME_OPTIONS[0];
+    }, [readingSettings.theme]);
+
+    const contentFontFamily = FONT_FAMILIES[readingSettings.fontFamily] || FONT_FAMILIES.serif;
+    const contentWidth = COLUMN_WIDTHS[readingSettings.columnWidth] || COLUMN_WIDTHS.comfortable;
+    const articleMaxWidth = Math.min(contentWidth + 160, 960);
+    const columnLayout = COLUMN_LAYOUT_VALUES[readingSettings.readingColumns] || COLUMN_LAYOUT_VALUES.single;
+    const letterSpacingValue =
+        LETTER_SPACING_VALUES[readingSettings.letterSpacing] ?? LETTER_SPACING_VALUES.standard;
+    const paragraphSpacingValue =
+        PARAGRAPH_SPACING_VALUES[readingSettings.paragraphSpacing] ?? PARAGRAPH_SPACING_VALUES.balanced;
+    const pagePaddingValue = PAGE_MARGIN_VALUES[readingSettings.pageMargin] ?? PAGE_MARGIN_VALUES.balanced;
+    const textAlignValue = readingSettings.textAlign === 'justify' ? 'justify' : 'start';
+
+    const updateReadingSetting = (key, value) => {
+        setReadingSettings(prevSettings => {
+            if (prevSettings[key] === value) {
+                return prevSettings;
+            }
+            return { ...prevSettings, [key]: value };
+        });
+    };
+
+    const resetReadingSettings = () => {
+        setReadingSettings({ ...DEFAULT_READING_SETTINGS });
+    };
+
+    const readerThemeStyle = useMemo(
+        () => ({
+            backgroundColor: activeTheme.background,
+            color: activeTheme.textColor,
+            '--reader-link-color': activeTheme.linkColor,
+            '--reader-code-bg': activeTheme.codeBackground,
+            '--reader-code-color': activeTheme.codeColor,
+            '--reader-border-color': activeTheme.borderColor,
+            '--reader-toc-bg': activeTheme.tocBackground,
+            '--reader-toc-border': activeTheme.tocBorder,
+            '--reader-toc-text': activeTheme.mutedText,
+            '--reader-toc-accent': activeTheme.linkColor,
+            '--reader-inline-code-bg': activeTheme.inlineCodeBackground,
+            '--reader-inline-code-color': activeTheme.inlineCodeColor,
+            '--reader-quote-bg': activeTheme.quoteBackground,
+            '--reader-quote-border': activeTheme.quoteBorder,
+            '--reader-copy-bg': activeTheme.copyButtonBackground,
+            '--reader-copy-hover-bg': activeTheme.copyButtonHover,
+            '--reader-copy-text': activeTheme.copyButtonText,
+            '--reader-letter-spacing': letterSpacingValue,
+            '--reader-paragraph-spacing': paragraphSpacingValue,
+            '--reader-page-padding': pagePaddingValue,
+            '--reader-text-align': textAlignValue,
+            '--reader-column-count': String(columnLayout.columnCount),
+            '--reader-column-gap': columnLayout.columnGap,
+        }),
+        [
+            activeTheme,
+            columnLayout,
+            letterSpacingValue,
+            pagePaddingValue,
+            paragraphSpacingValue,
+            textAlignValue,
+        ],
+    );
+
+    const contentStyle = useMemo(() => ({
+        fontSize: `${readingSettings.fontSize}px`,
+        lineHeight: readingSettings.lineHeight,
+        fontFamily: contentFontFamily,
+        maxWidth: `${contentWidth}px`,
+    }), [contentFontFamily, contentWidth, readingSettings.fontSize, readingSettings.lineHeight]);
+
+    const openImageViewer = (index) => {
+        setCurrentImage(index);
+        setIsViewerOpen(true);
+    };
+    const closeImageViewer = () => {
+        setCurrentImage(0);
+        setIsViewerOpen(false);
+    };
+
+    useEffect(() => {
+        if (post?.content) {
+            hljs.highlightAll();
+            const preTags = document.querySelectorAll('.post-content pre');
+            preTags.forEach(pre => {
+                if (pre.querySelector('.copy-button')) return;
+                const button = document.createElement('button');
+                button.innerText = 'Copy';
+                button.className = 'copy-button';
+                button.addEventListener('click', () => {
+                    const code = pre.querySelector('code').innerText;
+                    navigator.clipboard.writeText(code).then(() => {
+                        button.innerText = 'Copied!';
+                        setTimeout(() => { button.innerText = 'Copy'; }, 2000);
+                    });
+                });
+                pre.style.position = 'relative';
+                pre.appendChild(button);
+            });
+        }
+    }, [post]);
+
+    if (isLoadingPost) return <PostPageSkeleton />;
+    if (postError) return (
+        <div className='flex justify-center items-center min-h-screen'>
+            <Alert color='failure' className='text-xl'>Error: {postError.message}</Alert>
         </div>
     );
-};
-CardHeader.propTypes = { userId: PropTypes.string.isRequired };
+    if (!post) return null;
 
+    const parserOptions = {
+        replace: domNode => {
+            if (domNode.type === 'tag' && (domNode.name === 'h2' || domNode.name === 'h3')) {
+                const textContent = getTextFromNode(domNode);
+                const id = generateSlug(textContent);
+                if (id) domNode.attribs.id = id;
+                return;
+            }
+            if (domNode.type === 'tag' && domNode.name === 'img') {
+                const src = domNode.attribs.src;
+                const index = imagesInPost.indexOf(src);
+                if (index > -1) {
+                    return (
+                        <img
+                            {...domNode.attribs}
+                            onClick={() => openImageViewer(index)}
+                            style={{ cursor: 'pointer' }}
+                            loading="lazy"
+                        />
+                    );
+                }
+            }
+            if (domNode.type === 'tag' && domNode.name === 'div' && domNode.attribs['data-snippet-id']) {
+                const snippetId = domNode.attribs['data-snippet-id'];
+                return <CodeEditor snippetId={snippetId} />;
+            }
+        }
+    };
 
-const CardMedia = ({ post, onDoubleClick, showLikeHeart }) => {
-    const mediaUrl = post.mediaUrl || post.image;
-    const mediaType = post.mediaType || 'image';
+    const createMetaDescription = (htmlContent) => {
+        if (!htmlContent) return '';
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        return tempDiv.textContent.trim().slice(0, 155) + '...';
+    };
+
     return (
-        <div onDoubleClick={onDoubleClick} className="relative w-full aspect-square bg-gray-200 dark:bg-gray-700 cursor-pointer">
-            {mediaType === 'video' ? (
-                <video src={mediaUrl} className='h-full w-full object-cover' loop autoPlay muted playsInline poster={post.image} />
-            ) : (
-                <img src={mediaUrl} alt={post.title} loading='lazy' className='h-full w-full object-cover' />
-            )}
+        <>
+            <Helmet>
+                <title>{post.title}</title>
+                <meta name="description" content={createMetaDescription(post.content)} />
+                <meta property="og:title" content={post.title} />
+                <meta property="og:description" content={createMetaDescription(post.content)} />
+                <meta property="og:image" content={post.mediaUrl || post.image} />
+                <meta property="og:url" content={window.location.href} />
+                <meta property="og:type" content="article" />
+            </Helmet>
+
+            <ReadingProgressBar />
+
+            {/* --- NEW: Floating Action Button --- */}
+            <button
+                type="button"
+                onClick={() => setIsControlsOpen(true)}
+                className="reader-fab bg-blue-600 text-white dark:bg-blue-500"
+                aria-label="Open reading experience settings"
+            >
+                <HiOutlineAdjustmentsHorizontal size={24} />
+            </button>
+
+            {/* --- NEW: Reading Controls Modal --- */}
             <AnimatePresence>
-                {showLikeHeart && (
-                    <motion.div
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1.2, opacity: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    >
-                        <FaHeart className="text-white text-8xl drop-shadow-lg" />
-                    </motion.div>
+                {isControlsOpen && (
+                    <div className="reader-controls-modal">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="reader-controls-backdrop"
+                            onClick={() => setIsControlsOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 250 }}
+                            className="reader-controls-panel"
+                        >
+                            <ReadingExperienceControls
+                                settings={readingSettings}
+                                onSettingChange={updateReadingSetting}
+                                onReset={resetReadingSettings}
+                            />
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
-        </div>
-    );
-};
-CardMedia.propTypes = { post: PropTypes.object.isRequired, onDoubleClick: PropTypes.func, showLikeHeart: PropTypes.bool };
 
+            <main
+                className={`p-3 flex flex-col max-w-6xl mx-auto min-h-screen transition-colors duration-300 ${
+                    readingSettings.focusMode ? 'focus-mode-active' : ''
+                }`}
+            >
+                <h1 className='text-3xl mt-10 p-3 text-center font-serif max-w-2xl mx-auto lg:text-4xl'>{post.title}</h1>
+                <Link to={`/search?category=${post.category}`} className='self-center mt-5'>
+                    <Button color='gray' pill size='xs'>{post.category}</Button>
+                </Link>
+                <div className='mt-10 p-3 max-h-[600px] w-full flex justify-center'>
+                    {post.mediaType === 'video' ? <video src={post.mediaUrl} controls className='w-full object-contain rounded-lg shadow-lg' /> : <img src={post.mediaUrl || post.image} alt={post.title} className='w-full object-contain rounded-lg shadow-lg' />}
+                </div>
+                <div className='flex justify-between p-3 border-b border-slate-500 mx-auto w-full max-w-2xl text-xs'>
+                    <span>{new Date(post.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                    <span className='italic'>{post.content ? `${Math.ceil(post.content.split(' ').length / 200)} min read` : '0 min read'}</span>
+                </div>
 
-const CardActions = ({ post, likeProps, bookmarkProps, onActionClick, onShareClick }) => {
-    // New state for share animation
-    const [isSharing, setIsSharing] = useState(false);
-
-    const handleShare = (e) => {
-        onShareClick(e);
-        setIsSharing(true);
-    };
-
-    return (
-        <div className="flex justify-between items-center px-3 py-2">
-            <div className="flex items-center gap-4">
-                <Tooltip content={likeProps.isLiked ? 'Unlike' : 'Like'}>
-                    <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => onActionClick(e, likeProps.handleLike)}
-                        disabled={likeProps.isLoading}
-                        className='relative flex items-center gap-2 text-2xl text-gray-700 dark:text-gray-300'
-                    >
-                        {likeProps.isLoading ? <Spinner size="sm" /> :
-                            <>
-                                <AnimatePresence>
-                                    {likeProps.isLiked && (
-                                        <motion.div
-                                            key="confetti"
-                                            className="absolute inset-0"
-                                            initial={{ opacity: 1 }}
-                                            animate={{ opacity: [1, 0] }}
-                                            transition={{ duration: 0.6, ease: "easeOut" }}
-                                        >
-                                            {[...Array(6)].map((_, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    className="absolute"
-                                                    initial={{ y: 0, scale: 0.5, opacity: 1 }}
-                                                    animate={{
-                                                        y: -40,
-                                                        x: (Math.random() - 0.5) * 40,
-                                                        scale: 0,
-                                                        opacity: 0,
-                                                        rotate: Math.random() * 360,
-                                                    }}
-                                                    transition={{ duration: 0.5, delay: i * 0.05, ease: "easeOut" }}
-                                                >
-                                                    <FaHeart className="text-red-500" />
-                                                </motion.div>
-                                            ))}
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                                <motion.span animate={{ scale: likeProps.isLiked ? [1, 1.3, 1] : 1 }} transition={{ duration: 0.3 }}>
-                                    {likeProps.isLiked ? <FaHeart className="text-red-500" /> : <FaRegHeart />}
-                                </motion.span>
-                            </>
-                        }
-                    </motion.button>
-                </Tooltip>
-                <Tooltip content="Share">
-                    <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        animate={isSharing ? { rotate: [0, 15, -15, 15, 0], transition: { duration: 0.4 } } : {}}
-                        onAnimationComplete={() => setIsSharing(false)}
-                        onClick={handleShare}
-                        className='text-2xl text-gray-700 dark:text-gray-300'
-                    >
-                        <FaShareAlt />
-                    </motion.button>
-                </Tooltip>
-            </div>
-            <Tooltip content={bookmarkProps.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}>
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => onActionClick(e, bookmarkProps.handleBookmark)}
-                    disabled={bookmarkProps.isLoading}
-                    className='text-2xl text-gray-700 dark:text-gray-300'
-                >
-                    {bookmarkProps.isLoading ? <Spinner size="sm" /> :
-                        <motion.span
-                            animate={{
-                                rotateY: bookmarkProps.isBookmarked ? [0, 180, 0] : 0,
-                                scale: bookmarkProps.isBookmarked ? [1, 1.2, 1] : 1
+                {!readingSettings.focusMode && (
+                    <div className='w-full flex justify-center mt-4'>
+                        <div
+                            className='kindle-toc w-full'
+                            style={{
+                                maxWidth: `${Math.max(contentWidth, 560)}px`,
+                                '--reader-toc-bg': activeTheme.tocBackground,
+                                '--reader-toc-border': activeTheme.tocBorder,
+                                '--reader-toc-text': activeTheme.mutedText,
+                                '--reader-toc-accent': activeTheme.linkColor,
                             }}
-                            transition={{ duration: 0.4, ease: "easeInOut" }}
-                            style={{ display: 'inline-block' }}
                         >
-                            {bookmarkProps.isBookmarked ? <FaBookmark className="text-professional-blue-500"/> : <FaRegBookmark />}
-                        </motion.span>
-                    }
-                </motion.button>
-            </Tooltip>
-        </div>
-    );
-};
-CardActions.propTypes = { post: PropTypes.object, likeProps: PropTypes.object, bookmarkProps: PropTypes.object, onActionClick: PropTypes.func, onShareClick: PropTypes.func };
-
-
-const CardBody = ({ post, likeCount, authorUsername }) => {
-    const getCaption = (htmlContent) => {
-        if (!htmlContent) return post.title; // Fallback to title if content is empty
-        const text = htmlContent.replace(/<[^>]*>?/gm, ''); // Simple HTML stripper
-        return text.length > 100 ? text.substring(0, 100) + '...' : text;
-    };
-
-    const caption = getCaption(post.content);
-
-    return (
-        <div className="px-3 pb-3 text-sm text-gray-800 dark:text-gray-200">
-            <p className="font-bold">{likeCount.toLocaleString()} likes</p>
-            <p className="mt-1">
-                <span className="font-bold mr-2">{authorUsername}</span>
-                <span className="text-gray-700 dark:text-gray-300">{caption}</span>
-                {caption.endsWith('...') && (
-                    <Link to={`/post/${post.slug}`} className="text-gray-500 dark:text-gray-400 hover:underline ml-1">
-                        more
-                    </Link>
+                            <TableOfContents headings={headings} />
+                        </div>
+                    </div>
                 )}
-            </p>
-            <Link to={`/post/${post.slug}#comments`} className="text-gray-500 dark:text-gray-400 block mt-2 hover:underline">
-                View all comments
-            </Link>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 uppercase">
-                {moment(post.createdAt).fromNow()}
-            </p>
-        </div>
-    );
-};
-CardBody.propTypes = { post: PropTypes.object, likeCount: PropTypes.number, authorUsername: PropTypes.string };
 
+                <div className='w-full flex justify-center mt-8'>
+                    <article
+                        className={`kindle-reader ${readingSettings.focusMode ? 'kindle-reader--focus' : ''}`}
+                        style={{ ...readerThemeStyle, maxWidth: `${articleMaxWidth}px` }}
+                    >
+                        <div className='post-content tiptap mx-auto' style={contentStyle}>
+                            {parse(sanitizedContent, parserOptions)}
+                        </div>
+                    </article>
+                </div>
 
-// --- Main PostCard Component ---
-export default function PostCard({ post }) {
-    const { currentUser } = useSelector((state) => state.user);
-    const navigate = useNavigate();
-    const { user: author } = useUser(post.userId);
+                {!readingSettings.focusMode && (
+                    <>
+                        <div
+                            className='mx-auto w-full px-3 my-8 flex justify-between items-center'
+                            style={{ maxWidth: `${contentWidth}px` }}
+                        >
+                            <ClapButton post={post} />
+                            <SocialShare post={post} />
+                        </div>
 
-    const [showLikeHeart, setShowLikeHeart] = useState(false);
+                        <div className='mx-auto w-full' style={{ maxWidth: `${contentWidth}px` }}>
+                            <CommentSection postId={post._id} />
+                        </div>
 
-    const { likeCount, isLiked, isLoading: isLikeLoading, handleLike } = useLike(post.claps || 0, post.clappedBy?.includes(currentUser?._id), post._id);
-    const { isBookmarked, isLoading: isBookmarkLoading, handleBookmark } = useBookmark(post.bookmarkedBy?.includes(currentUser?._id), post._id);
+                        <div className='flex flex-col justify-center items-center mb-5'>
+                            <h1 className='text-xl mt-5'>Related articles</h1>
+                            <div className='flex flex-wrap gap-5 mt-5 justify-center'>
+                                {relatedPosts &&
+                                    relatedPosts
+                                        .filter(p => p._id !== post._id)
+                                        .map((p) => <PostCard key={p._id} post={p} />)}
+                            </div>
+                        </div>
+                    </>
+                )}
+            </main>
 
-    const handleActionClick = (e, actionHandler) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!currentUser) { navigate('/sign-in'); return; }
-        actionHandler();
-    };
-
-    const handleMediaDoubleClick = (e) => {
-        e.preventDefault();
-        if (!currentUser) { navigate('/sign-in'); return; }
-        if (!isLiked) { // Only trigger like action, not unlike
-            handleLike();
-            setShowLikeHeart(true);
-            setTimeout(() => setShowLikeHeart(false), 800);
-        }
-    };
-
-    const handleShareClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (navigator.share) {
-            navigator.share({ title: post.title, text: post.title, url: `${window.location.origin}/post/${post.slug}` });
-        } else {
-            navigator.clipboard.writeText(`${window.location.origin}/post/${post.slug}`);
-        }
-    };
-
-    return (
-        <motion.div
-            layoutId={`post-card-${post.slug}`}
-            className='w-full border dark:border-slate-700 border-gray-200 rounded-xl sm:w-[420px] mx-auto shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col bg-white dark:bg-slate-800 overflow-hidden'
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.1 }}
-            transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-        >
-            <CardHeader userId={post.userId} />
-
-            <CardMedia post={post} onDoubleClick={handleMediaDoubleClick} showLikeHeart={showLikeHeart} />
-
-            <CardActions
-                post={post}
-                likeProps={{ isLiked, isLoading: isLikeLoading, handleLike }}
-                bookmarkProps={{ isBookmarked, isLoading: isBookmarkLoading, handleBookmark }}
-                onActionClick={handleActionClick}
-                onShareClick={handleShareClick}
-            />
-
-            <CardBody
-                post={post}
-                likeCount={likeCount}
-                authorUsername={author?.username || '...'}
-            />
-        </motion.div>
+            {isViewerOpen && (
+                <ImageViewer
+                    src={imagesInPost}
+                    currentIndex={currentImage}
+                    disableScroll={true}
+                    closeOnClickOutside={true}
+                    onClose={closeImageViewer}
+                    backgroundStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.9)' }}
+                />
+            )}
+        </>
     );
 }
-
-PostCard.propTypes = {
-    post: PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        userId: PropTypes.string.isRequired,
-        slug: PropTypes.string.isRequired,
-        title: PropTypes.string.isRequired,
-        createdAt: PropTypes.string.isRequired,
-        content: PropTypes.string,
-        claps: PropTypes.number,
-        clappedBy: PropTypes.arrayOf(PropTypes.string),
-        bookmarkedBy: PropTypes.arrayOf(PropTypes.string),
-        mediaUrl: PropTypes.string,
-        image: PropTypes.string,
-        mediaType: PropTypes.oneOf(['image', 'video']),
-    }).isRequired,
-};
