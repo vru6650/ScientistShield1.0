@@ -4,12 +4,18 @@ import { useSelector } from 'react-redux';
 
 // API function to bookmark/unbookmark a post
 const bookmarkPost = async (postId, token) => {
+    const headers = {
+        'Content-Type': 'application/json',
+    };
+
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
     const res = await fetch(`/api/post/${postId}/bookmark`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        },
+        headers,
+        credentials: 'include',
     });
     if (!res.ok) {
         const errorData = await res.json();
@@ -78,10 +84,10 @@ export const useBookmark = (initialIsBookmarked, postId) => {
 
     const { mutate, isLoading } = useMutation({
         mutationFn: () => {
-            if (!currentUser?.token || !currentUser?._id) {
+            if (!currentUser?._id) {
                 return Promise.reject(new Error('You must be logged in to bookmark posts.'));
             }
-            return bookmarkPost(postId, currentUser.token);
+            return bookmarkPost(postId, currentUser?.token);
         },
         onMutate: async () => {
             const userId = currentUser?._id;
