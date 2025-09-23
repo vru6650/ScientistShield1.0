@@ -14,6 +14,12 @@ import CommentSection from '../components/CommentSection';
 import PostCard from '../components/PostCard';
 import TableOfContents from '../components/TableOfContents';
 import ReadingProgressBar from '../components/ReadingProgressBar';
+import ReadingExperienceControls, {
+    DEFAULT_READING_SETTINGS,
+    THEME_OPTIONS,
+    FONT_FAMILIES,
+    COLUMN_WIDTHS,
+} from '../components/ReadingExperienceControls';
 import SocialShare from '../components/SocialShare';
 import ClapButton from '../components/ClapButton';
 import CodeEditor from '../components/CodeEditor';
@@ -66,8 +72,44 @@ const getTextFromNode = (node) => {
     return node.children.map(getTextFromNode).join('');
 };
 
+const READER_STORAGE_KEY = 'ss:reader-settings:v1';
+
 export default function PostPage() {
     const { postSlug } = useParams();
+
+    const [readingSettings, setReadingSettings] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const stored = window.localStorage.getItem(READER_STORAGE_KEY);
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    return { ...DEFAULT_READING_SETTINGS, ...parsed };
+                } catch (error) {
+                    console.warn('Failed to parse stored reader settings:', error);
+                }
+            }
+        }
+        return { ...DEFAULT_READING_SETTINGS };
+    });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem(READER_STORAGE_KEY, JSON.stringify(readingSettings));
+        }
+    }, [readingSettings]);
+
+    useEffect(() => {
+        if (typeof document === 'undefined') return undefined;
+        const className = 'kindle-focus-mode';
+        if (readingSettings.focusMode) {
+            document.body.classList.add(className);
+        } else {
+            document.body.classList.remove(className);
+        }
+        return () => {
+            document.body.classList.remove(className);
+        };
+    }, [readingSettings.focusMode]);
 
     const { data: post, isLoading: isLoadingPost, error: postError } = useQuery({
         queryKey: ['post', postSlug],
@@ -109,6 +151,54 @@ export default function PostPage() {
         imageElements.forEach(img => imageSources.push(img.src));
         return imageSources;
     }, [sanitizedContent]);
+
+    const activeTheme = useMemo(() => {
+        return THEME_OPTIONS.find(theme => theme.id === readingSettings.theme) || THEME_OPTIONS[0];
+    }, [readingSettings.theme]);
+
+    const contentFontFamily = FONT_FAMILIES[readingSettings.fontFamily] || FONT_FAMILIES.serif;
+    const contentWidth = COLUMN_WIDTHS[readingSettings.columnWidth] || COLUMN_WIDTHS.comfortable;
+    const articleMaxWidth = Math.min(contentWidth + 160, 960);
+
+    const updateReadingSetting = (key, value) => {
+        setReadingSettings(prevSettings => {
+            if (prevSettings[key] === value) {
+                return prevSettings;
+            }
+            return { ...prevSettings, [key]: value };
+        });
+    };
+
+    const resetReadingSettings = () => {
+        setReadingSettings({ ...DEFAULT_READING_SETTINGS });
+    };
+
+    const readerThemeStyle = useMemo(() => ({
+        backgroundColor: activeTheme.background,
+        color: activeTheme.textColor,
+        '--reader-link-color': activeTheme.linkColor,
+        '--reader-code-bg': activeTheme.codeBackground,
+        '--reader-code-color': activeTheme.codeColor,
+        '--reader-border-color': activeTheme.borderColor,
+        '--reader-toc-bg': activeTheme.tocBackground,
+        '--reader-toc-border': activeTheme.tocBorder,
+        '--reader-toc-text': activeTheme.mutedText,
+        '--reader-toc-accent': activeTheme.linkColor,
+        '--reader-inline-code-bg': activeTheme.inlineCodeBackground,
+        '--reader-inline-code-color': activeTheme.inlineCodeColor,
+        '--reader-quote-bg': activeTheme.quoteBackground,
+        '--reader-quote-border': activeTheme.quoteBorder,
+        '--reader-copy-bg': activeTheme.copyButtonBackground,
+        '--reader-copy-hover-bg': activeTheme.copyButtonHover,
+        '--reader-copy-text': activeTheme.copyButtonText,
+    }), [activeTheme]);
+
+    const contentStyle = useMemo(() => ({
+        fontSize: `${readingSettings.fontSize}px`,
+        lineHeight: readingSettings.lineHeight,
+        fontFamily: contentFontFamily,
+        maxWidth: `${contentWidth}px`,
+    }), [contentFontFamily, contentWidth, readingSettings.fontSize, readingSettings.lineHeight]);
 
     const openImageViewer = (index) => {
         setCurrentImage(index);
@@ -199,7 +289,11 @@ export default function PostPage() {
             </Helmet>
 
             <ReadingProgressBar />
-            <main className='p-3 flex flex-col max-w-6xl mx-auto min-h-screen'>
+            <main
+                className={`p-3 flex flex-col max-w-6xl mx-auto min-h-screen transition-colors duration-300 ${
+                    readingSettings.focusMode ? 'focus-mode-active' : ''
+                }`}
+            >
                 <h1 className='text-3xl mt-10 p-3 text-center font-serif max-w-2xl mx-auto lg:text-4xl'>{post.title}</h1>
                 <Link to={`/search?category=${post.category}`} className='self-center mt-5'>
                     <Button color='gray' pill size='xs'>{post.category}</Button>
@@ -212,27 +306,66 @@ export default function PostPage() {
                     <span className='italic'>{post.content ? `${Math.ceil(post.content.split(' ').length / 200)} min read` : '0 min read'}</span>
                 </div>
 
-                <div className="max-w-2xl mx-auto w-full">
-                    <TableOfContents headings={headings} />
-                </div>
+                <ReadingExperienceControls
+                    settings={readingSettings}
+                    onSettingChange={updateReadingSetting}
+                    onReset={resetReadingSettings}
+                    maxWidth={`${Math.max(contentWidth, 560)}px`}
+                />
 
-                <div className='p-3 max-w-2xl mx-auto w-full post-content tiptap'>
-                    {parse(sanitizedContent, parserOptions)}
-                </div>
-
-                <div className="max-w-2xl mx-auto w-full px-3 my-8 flex justify-between items-center">
-                    <ClapButton post={post} />
-                    <SocialShare post={post} />
-                </div>
-
-                <CommentSection postId={post._id} />
-
-                <div className='flex flex-col justify-center items-center mb-5'>
-                    <h1 className='text-xl mt-5'>Related articles</h1>
-                    <div className='flex flex-wrap gap-5 mt-5 justify-center'>
-                        {relatedPosts && relatedPosts.filter(p => p._id !== post._id).map((p) => <PostCard key={p._id} post={p} />)}
+                {!readingSettings.focusMode && (
+                    <div className='w-full flex justify-center mt-4'>
+                        <div
+                            className='kindle-toc w-full'
+                            style={{
+                                maxWidth: `${Math.max(contentWidth, 560)}px`,
+                                '--reader-toc-bg': activeTheme.tocBackground,
+                                '--reader-toc-border': activeTheme.tocBorder,
+                                '--reader-toc-text': activeTheme.mutedText,
+                                '--reader-toc-accent': activeTheme.linkColor,
+                            }}
+                        >
+                            <TableOfContents headings={headings} />
+                        </div>
                     </div>
+                )}
+
+                <div className='w-full flex justify-center mt-8'>
+                    <article
+                        className={`kindle-reader ${readingSettings.focusMode ? 'kindle-reader--focus' : ''}`}
+                        style={{ ...readerThemeStyle, maxWidth: `${articleMaxWidth}px` }}
+                    >
+                        <div className='post-content tiptap mx-auto' style={contentStyle}>
+                            {parse(sanitizedContent, parserOptions)}
+                        </div>
+                    </article>
                 </div>
+
+                {!readingSettings.focusMode && (
+                    <>
+                        <div
+                            className='mx-auto w-full px-3 my-8 flex justify-between items-center'
+                            style={{ maxWidth: `${contentWidth}px` }}
+                        >
+                            <ClapButton post={post} />
+                            <SocialShare post={post} />
+                        </div>
+
+                        <div className='mx-auto w-full' style={{ maxWidth: `${contentWidth}px` }}>
+                            <CommentSection postId={post._id} />
+                        </div>
+
+                        <div className='flex flex-col justify-center items-center mb-5'>
+                            <h1 className='text-xl mt-5'>Related articles</h1>
+                            <div className='flex flex-wrap gap-5 mt-5 justify-center'>
+                                {relatedPosts &&
+                                    relatedPosts
+                                        .filter(p => p._id !== post._id)
+                                        .map((p) => <PostCard key={p._id} post={p} />)}
+                            </div>
+                        </div>
+                    </>
+                )}
             </main>
 
             {isViewerOpen && (

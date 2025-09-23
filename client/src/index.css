@@ -338,6 +338,151 @@ html {
 }
 
 
+/*
+ * --- Kindle-style Reader Enhancements ---
+ * Provides typography and layout refinements for the immersive reading mode.
+ */
+.kindle-reader {
+  position: relative;
+  border-radius: 1.5rem;
+  border: 1px solid var(--reader-border-color, rgba(148, 163, 184, 0.28));
+  box-shadow: 0 30px 70px -45px rgba(15, 23, 42, 0.65);
+  padding: clamp(1.75rem, 2vw + 1rem, 3rem);
+  width: 100%;
+  transition: background-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease, transform 0.3s ease;
+  backdrop-filter: blur(2px);
+}
+
+.kindle-reader:hover {
+  transform: translateY(-2px);
+}
+
+.kindle-reader--focus {
+  box-shadow: 0 55px 130px -60px rgba(15, 23, 42, 0.75);
+}
+
+.kindle-reader .post-content {
+  width: 100%;
+}
+
+.kindle-reader .post-content h1,
+.kindle-reader .post-content h2,
+.kindle-reader .post-content h3,
+.kindle-reader .post-content h4,
+.kindle-reader .post-content h5,
+.kindle-reader .post-content h6 {
+  color: inherit;
+}
+
+.kindle-reader .post-content p {
+  margin-bottom: 1.65em;
+  letter-spacing: 0.01em;
+}
+
+
+.kindle-reader .post-content a {
+  color: var(--reader-link-color, #2563eb);
+  box-shadow: inset 0 -1px 0 0 var(--reader-link-color, #2563eb);
+  text-decoration: none;
+  transition: color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.kindle-reader .post-content a:hover {
+  color: var(--reader-link-color, #2563eb);
+  box-shadow: inset 0 -1px 0 0 transparent;
+}
+
+.kindle-reader .post-content pre {
+  background-color: var(--reader-code-bg, #1e293b);
+  color: var(--reader-code-color, #e2e8f0);
+  border-radius: 1.25rem;
+  border: 1px solid var(--reader-border-color, rgba(148, 163, 184, 0.28));
+  box-shadow: 0 22px 40px -30px rgba(15, 23, 42, 0.55);
+  padding: 1.75rem;
+}
+
+.kindle-reader .post-content code {
+  background-color: var(--reader-inline-code-bg, rgba(30, 41, 59, 0.25));
+  color: var(--reader-inline-code-color, var(--reader-code-color, #e2e8f0));
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.kindle-reader .post-content blockquote {
+  background-color: var(--reader-quote-bg, rgba(226, 232, 240, 0.45));
+  border-left: 4px solid var(--reader-quote-border, var(--reader-link-color, #2563eb));
+  padding: 1.25rem 1.5rem;
+  border-radius: 0 1rem 1rem 0;
+  margin: 2rem 0;
+  color: inherit;
+}
+
+.kindle-reader .post-content img {
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 70px -45px rgba(15, 23, 42, 0.55);
+  margin: 2.5rem auto;
+}
+
+.kindle-reader .copy-button {
+  background-color: var(--reader-copy-bg, rgba(30, 41, 59, 0.85));
+  color: var(--reader-copy-text, var(--reader-code-color, #e2e8f0));
+  opacity: 1;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.kindle-reader .copy-button:hover {
+  background-color: var(--reader-copy-hover-bg, rgba(59, 130, 246, 0.5));
+  transform: translateY(-1px);
+}
+
+.kindle-toc .toc-container {
+  background: var(--reader-toc-bg, var(--color-bg-secondary));
+  border: 1px solid var(--reader-toc-border, rgba(148, 163, 184, 0.35));
+  box-shadow: 0 25px 50px -35px rgba(15, 23, 42, 0.65);
+  color: var(--reader-toc-text, var(--color-text-secondary));
+}
+
+.kindle-toc .toc-container h3 {
+  color: inherit;
+}
+
+.kindle-toc .toc-link {
+  color: var(--reader-toc-text, var(--color-text-secondary));
+}
+
+.kindle-toc .toc-link:hover {
+  color: var(--reader-toc-accent, var(--color-accent));
+}
+
+.kindle-toc .active-toc-item {
+  color: var(--reader-toc-accent, var(--color-accent));
+  border-left-color: var(--reader-toc-accent, var(--color-accent));
+}
+
+.focus-mode-active {
+  position: relative;
+}
+
+.focus-mode-active::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(30, 41, 59, 0.55), rgba(2, 6, 23, 0.75));
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+
+.focus-mode-active > * {
+  position: relative;
+  z-index: 1;
+}
+
+body.kindle-focus-mode {
+  background-color: #020617;
+}
+
 @keyframes pulse-slow {
   0%, 100% {
     transform: scale(1);
