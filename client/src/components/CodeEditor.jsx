@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Editor from '@monaco-editor/react';
 import { Button, ToggleSwitch, Spinner, Alert } from 'flowbite-react';
 import { useSelector } from 'react-redux';
@@ -10,6 +10,54 @@ import { useNavigate } from 'react-router-dom';
 
 import LanguageSelector from './LanguageSelector';
 import useCodeSnippet from '../hooks/useCodeSnippet';
+
+const supportedLanguages = ['html', 'css', 'javascript', 'cpp', 'python'];
+
+const languageAliases = {
+    js: 'javascript',
+    javascript: 'javascript',
+    py: 'python',
+    python: 'python',
+    'c++': 'cpp',
+    cpp: 'cpp',
+};
+
+const normalizeLanguage = (language) => {
+    if (!language) {
+        return 'html';
+    }
+
+    const normalizedInput = typeof language === 'string'
+        ? language.toLowerCase()
+        : String(language).toLowerCase();
+
+    const normalized = languageAliases[normalizedInput] || normalizedInput;
+
+    return supportedLanguages.includes(normalized) ? normalized : 'html';
+};
+
+const normalizeInitialCode = (initialCode, fallbackLanguage) => {
+    if (!initialCode) {
+        return {};
+    }
+
+    if (typeof initialCode === 'string') {
+        const normalizedLanguage = normalizeLanguage(fallbackLanguage);
+        return { [normalizedLanguage]: initialCode };
+    }
+
+    if (typeof initialCode === 'object') {
+        return Object.entries(initialCode).reduce((acc, [key, value]) => {
+            const normalizedKey = normalizeLanguage(key);
+            if (typeof value === 'string' && supportedLanguages.includes(normalizedKey)) {
+                acc[normalizedKey] = value;
+            }
+            return acc;
+        }, {});
+    }
+
+    return {};
+};
 
 const defaultCodes = {
     html: `<!DOCTYPE html>
@@ -68,17 +116,23 @@ export default function CodeEditor({ initialCode = {}, language = 'html', snippe
     const outputRef = useRef(null);
     const { snippet, isLoading: isSnippetLoading, error: snippetError } = useCodeSnippet(snippetId);
 
+    const normalizedInitialLanguage = normalizeLanguage(language);
+    const normalizedInitialCode = useMemo(
+        () => normalizeInitialCode(initialCode, normalizedInitialLanguage),
+        [initialCode, normalizedInitialLanguage]
+    );
+
 
     // Consolidated state for all code snippets
     const [codes, setCodes] = useState({
-        html: initialCode.html || defaultCodes.html,
-        css: initialCode.css || defaultCodes.css,
-        javascript: initialCode.javascript || defaultCodes.javascript,
-        cpp: initialCode.cpp || defaultCodes.cpp,
-        python: initialCode.python || defaultCodes.python,
+        html: normalizedInitialCode.html || defaultCodes.html,
+        css: normalizedInitialCode.css || defaultCodes.css,
+        javascript: normalizedInitialCode.javascript || defaultCodes.javascript,
+        cpp: normalizedInitialCode.cpp || defaultCodes.cpp,
+        python: normalizedInitialCode.python || defaultCodes.python,
     });
 
-    const [selectedLanguage, setSelectedLanguage] = useState(language);
+    const [selectedLanguage, setSelectedLanguage] = useState(normalizedInitialLanguage);
     const [srcDoc, setSrcDoc] = useState('');
     const [consoleOutput, setConsoleOutput] = useState('');
     const [autoRun, setAutoRun] = useState(true);
@@ -200,7 +254,7 @@ export default function CodeEditor({ initialCode = {}, language = 'html', snippe
             css: snippet.css || defaultCodes.css,
             javascript: snippet.js || defaultCodes.javascript,
         }));
-        setSelectedLanguage(preferredLanguage);
+        setSelectedLanguage(normalizeLanguage(preferredLanguage));
         setHasAppliedSnippet(true);
     }, [snippetId, snippet, hasAppliedSnippet, language, selectedLanguage]);
 
@@ -224,11 +278,11 @@ export default function CodeEditor({ initialCode = {}, language = 'html', snippe
 
     const resetCode = () => {
         setCodes({
-            html: (snippet?.html ?? initialCode.html) || defaultCodes.html,
-            css: (snippet?.css ?? initialCode.css) || defaultCodes.css,
-            javascript: (snippet?.js ?? initialCode.javascript) || defaultCodes.javascript,
-            cpp: initialCode.cpp || defaultCodes.cpp,
-            python: initialCode.python || defaultCodes.python,
+            html: (snippet?.html ?? normalizedInitialCode.html) || defaultCodes.html,
+            css: (snippet?.css ?? normalizedInitialCode.css) || defaultCodes.css,
+            javascript: (snippet?.js ?? normalizedInitialCode.javascript) || defaultCodes.javascript,
+            cpp: normalizedInitialCode.cpp || defaultCodes.cpp,
+            python: normalizedInitialCode.python || defaultCodes.python,
         });
         setSrcDoc('');
         setConsoleOutput('');
@@ -261,7 +315,10 @@ export default function CodeEditor({ initialCode = {}, language = 'html', snippe
         <FullScreenWrapper {...fullScreenProps}>
             <div className={`flex flex-col rounded-lg shadow-xl ${isFullScreen ? 'h-full' : 'h-[90vh] md:h-[800px] bg-gray-50 dark:bg-gray-900'}`}>
                 <div className="flex flex-col sm:flex-row justify-between items-center p-2 mb-2 gap-4 border-b border-gray-200 dark:border-gray-700">
-                    <LanguageSelector selectedLanguage={selectedLanguage} setSelectedLanguage={setSelectedLanguage} />
+                    <LanguageSelector
+                        selectedLanguage={selectedLanguage}
+                        setSelectedLanguage={(lang) => setSelectedLanguage(normalizeLanguage(lang))}
+                    />
                     <div className="flex items-center gap-4 flex-wrap justify-center">
                         {isLivePreviewLanguage && <ToggleSwitch checked={autoRun} onChange={() => setAutoRun(!autoRun)} label="Auto-Run" />}
                         <Button gradientDuoTone="purpleToBlue" onClick={runCode} isProcessing={isRunning} disabled={isRunning} size="sm">
